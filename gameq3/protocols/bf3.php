@@ -56,7 +56,7 @@ class Bf3 extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _preparePackets($packets) {
+	protected function _preparePackets($packets) {
 		$buf = new \GameQ3\Buffer(implode('', $packets));
 		
 		$buf->skip(8); /* skip header */
@@ -79,14 +79,14 @@ class Bf3 extends \GameQ3\Protocols {
 		return $result;
 	}
 	
-	private function _process_version($packets) {
+	protected function _process_version($packets) {
 		$words = $this->_preparePackets($packets);
 		
 		if (isset($words[2]))
 			$this->result->addCommon('version', $words[2]);
 	}
 	
-	private function _process_players($packets) {
+	protected function _process_players($packets) {
 		$words = $this->_preparePackets($packets);
 		
 		// Count the number of words and figure out the highest index.
@@ -141,7 +141,7 @@ class Bf3 extends \GameQ3\Protocols {
 		// @todo: Add some team definition stuff
 	}
 	
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		$words = $this->_preparePackets($packets);
 		
 		$this->result->addCommon('hostname', $words[1]);

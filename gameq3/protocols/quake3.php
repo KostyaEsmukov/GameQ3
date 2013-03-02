@@ -44,7 +44,7 @@ class Quake3 extends \GameQ3\Protocols {
 		}
 	}
 
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		$buf = new \GameQ3\Buffer($packets[0]);
 
 		// Grab the header

@@ -45,7 +45,7 @@ class Minecraft extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		// http://www.wiki.vg/Server_List_Ping
 		// https://gist.github.com/barneygale/1209061
 		

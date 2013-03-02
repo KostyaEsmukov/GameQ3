@@ -63,7 +63,7 @@ class Source extends \GameQ3\Protocols {
 	
 	
 	
-	private function _process_challenge($packets) {
+	protected function _process_challenge($packets) {
 		$buf = new \GameQ3\Buffer($packets[0]);
 		$head = $buf->read(4);
 		
@@ -83,7 +83,7 @@ class Source extends \GameQ3\Protocols {
 	
 	
 	
-	private function _preparePackets($packets) {
+	protected function _preparePackets($packets) {
 		$buffer = new \GameQ3\Buffer($packets[0]);
 
 		// First we need to see if the packet is split
@@ -163,7 +163,7 @@ class Source extends \GameQ3\Protocols {
     
 	
 	
-	private function _process_players($packets) {
+	protected function _process_players($packets) {
 	
 		$packet = $this->_preparePackets($packets);
 		
@@ -201,7 +201,7 @@ class Source extends \GameQ3\Protocols {
 	}
 	
 	
-	private function _process_rules($packets) {
+	protected function _process_rules($packets) {
 	
 		$packet = $this->_preparePackets($packets);
 		
@@ -246,7 +246,7 @@ class Source extends \GameQ3\Protocols {
 	}
 	
 	
-	private function _process_details($packets) {
+	protected function _process_details($packets) {
 		// A2S_INFO is not splitted
 		
 		// All info is here: https://developer.valvesoftware.com/wiki/Server_Queries

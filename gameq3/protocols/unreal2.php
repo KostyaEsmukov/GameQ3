@@ -60,7 +60,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _preparePackets($packets) {
+	protected function _preparePackets($packets) {
 		foreach($packets as $id => $packet) {
 			$packets[$id] = substr($packet, 5);
 		}
@@ -69,7 +69,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	
 
-	private function _readBadPascalString(\GameQ3\Buffer &$buf) {
+	protected function _readBadPascalString(\GameQ3\Buffer &$buf) {
 		$len = $buf->readInt8();
 		
 		$bufpos = $buf->getPosition();
@@ -91,7 +91,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	This works for hostname, but they count length differently! sometimes they include nullchar and sometimes they dont.
 	Fuck you unreal2, gonna use dumb readString method provided above.
 	
-	private function _readColoredPascalString(\GameQ3\Buffer &$buf) {
+	protected function _readColoredPascalString(\GameQ3\Buffer &$buf) {
 		$len = $buf->readInt8();
 		$str = "";
 		
@@ -113,7 +113,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	*/
 	
-	private function _findEncoding($str) {
+	protected function _findEncoding($str) {
 		// Shit happens when clients use non-latin names in their game, game mixes ucs-2 encoding with one-byte national encoding
 		
 		$encs = array("windows-1251");
@@ -125,7 +125,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		return iconv("UCS-2//IGNORE", "UTF-8", $str);
 	}
 	
-	private function _readUnrealString(\GameQ3\Buffer &$buf) {
+	protected function _readUnrealString(\GameQ3\Buffer &$buf) {
 		// Normal pascal string
 		if (ord($buf->lookAhead(1)) < 129) {
 			$str = $buf->readPascalString(1);
@@ -146,7 +146,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		return $str;
 	}
 	
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
 		
 		//$this->p->strReplace("\xa0", "\x20");
@@ -179,7 +179,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		}*/
 	}
 	
-	private function _process_players($packets) {
+	protected function _process_players($packets) {
 		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
 		
 		
@@ -199,7 +199,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _process_rules($packets) {
+	protected function _process_rules($packets) {
 		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
 		
 		

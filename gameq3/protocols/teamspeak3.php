@@ -138,7 +138,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _process_r($packets) {
+	protected function _process_r($packets) {
 		$buf = new \GameQ3\Buffer(implode("", $packets));
 		unset($packets);
 		
@@ -240,17 +240,12 @@ class Teamspeak3 extends \GameQ3\Protocols {
 
 	}
 	
-	
-	
-	
-	
-	
-	
-	private function _unescape($str) {
+
+	protected function _unescape($str) {
 		return str_replace($this->string_find, $this->string_replace, $str);
 	}
 	
-	private function _verify_response($response) {
+	protected function _verify_response($response) {
 		// Check the response
 		if($response === 'error id=0 msg=ok') return true;
 		

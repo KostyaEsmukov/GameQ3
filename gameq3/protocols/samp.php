@@ -70,7 +70,7 @@ class Samp extends \GameQ3\Protocols {
 	}
 	
 	
-	private function _preparePackets($packets) {
+	protected function _preparePackets($packets) {
 		// Make buffer so we can check this out
 		$buf = new \GameQ3\Buffer(implode('', $packets));
 
@@ -87,7 +87,7 @@ class Samp extends \GameQ3\Protocols {
 	}
 	
 	
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		$buf = $this->_preparePackets($packets);
 		if (!$buf) return;
 		
@@ -102,7 +102,7 @@ class Samp extends \GameQ3\Protocols {
 		$this->result->addCommon('map', $buf->read($buf->readInt32()));
 	}
 	
-	private function _process_rules($packets) {
+	protected function _process_rules($packets) {
 		$buf = $this->_preparePackets($packets);
 		if (!$buf) return;
 		
@@ -120,7 +120,7 @@ class Samp extends \GameQ3\Protocols {
 		}
 	}
 	
-	private function _process_players($packets) {
+	protected function _process_players($packets) {
 		$buf = $this->_preparePackets($packets);
 		if (!$buf) return;
 		

@@ -25,7 +25,7 @@ class Mohwf extends \GameQ3\Protocols\Bf3 {
 	protected $name_long = "Medal of Honor Warfighter";
 
 	
-	private function _process_status($packets) {
+	protected function _process_status($packets) {
 		$words = $this->_preparePackets($packets);
 		
 		$this->result->addCommon('hostname', $words[1]);
