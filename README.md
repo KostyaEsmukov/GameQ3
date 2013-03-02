@@ -16,7 +16,11 @@ Simple usage example:
 
     $gq = new GameQ3\GameQ3();
     try {
-        $gq->addServer($server);
+        $gq->addServer(array(
+            'id' => 'cs',
+            'type' => 'cs',
+            'host' => 'simhost.org:27015'
+        ));
     }
     catch(Exception $e) {
         die($e->getMessage());
