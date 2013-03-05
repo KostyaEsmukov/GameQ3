@@ -25,13 +25,11 @@ class Result {
 	private $ign_settings = true;
 	private $ign_players = true;
 	private $ign_teams = true;
-	private $ign_groups = true;
-
 	
 	public function __construct($ign) {
 	
 		$this->result['info'] = array();
-		$this->result['common'] = array();
+		$this->result['general'] = array();
 		
 		if (!isset($ign['settings'])) {
 			$this->result['settings'] = array();
@@ -45,10 +43,6 @@ class Result {
 			$this->result['teams'] = array();
 			$this->ign_teams = false;
 		}
-		if (!isset($ign['groups'])) {
-			$this->result['groups'] = array();
-			$this->ign_groups = false;
-		}
 	}
 	
 	public function addCustom($zone, $name, $value) {
@@ -61,17 +55,17 @@ class Result {
 		return true;
 	}
 	
-	public function addCommon($name, $value) {
-		$this->result['common'][$name] = $value;
+	public function addGeneral($name, $value) {
+		$this->result['general'][$name] = $value;
 		return true;
 	}
 	
-	public function issetCommon($name) {
-		return isset($this->result['common'][$name]);
+	public function issetGeneral($name) {
+		return isset($this->result['general'][$name]);
 	}
 	
-	public function getCommon($name) {
-		return isset($this->result['common'][$name]) ? $this->result['common'][$name] : null;
+	public function getGeneral($name) {
+		return isset($this->result['general'][$name]) ? $this->result['general'][$name] : null;
 	}
 	
 	public function addSetting($name, $value) {
@@ -80,14 +74,6 @@ class Result {
 		return true;
 	}
 	
-	public function addGroup($group, $name, $value) {
-		if ($this->ign_groups) return false;
-		if (!isset($this->result['groups'][$group]))
-			$this->result['groups'][$group] = array();
-		$this->result['groups'][$group] []= array($name, $value);
-		return true;
-	}
-
 	public function addPlayer($name, $score, $teamid = null, $other = array()) {
 		if ($this->ign_players) return false;
 		$this->result['players'] []= array(

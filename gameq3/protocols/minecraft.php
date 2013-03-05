@@ -37,11 +37,9 @@ class Minecraft extends \GameQ3\Protocols {
 		$this->queue('status', 'tcp', $this->packets['status'], array('response_count' => 1));
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
-			$this->_process_status($requests['responses']);
+			return $this->_process_status($requests['responses']);
 		}
 	}
 	
@@ -53,7 +51,7 @@ class Minecraft extends \GameQ3\Protocols {
 		
 		if ($buf->read(1) !== "\xFF") {
 			$this->debug("Wrong header");
-			return;
+			return false;
 		}
 		
 		
@@ -69,19 +67,19 @@ class Minecraft extends \GameQ3\Protocols {
 			// $info[0] = 1
 			$this->result->addSetting('protocol_version', $info[1]);
 			
-			$this->result->addCommon('version', $info[2]);
-			$this->result->addCommon('hostname', $info[3]);
+			$this->result->addGeneral('version', $info[2]);
+			$this->result->addGeneral('hostname', $info[3]);
 			
-			$this->result->addCommon('num_players', min($info[4], $info[5]));
-			$this->result->addCommon('max_players', $info[5]);
+			$this->result->addGeneral('num_players', min(intval($info[4]), intval($info[5])));
+			$this->result->addGeneral('max_players', intval($info[5]));
 		
 		} else {
 			$info = explode("\xC2\xA7", $cbuf);
 			
 			// Actually it is MotD, but they usually use this as server name
-			$this->result->addCommon('hostname', $info[0]);
-			$this->result->addCommon('num_players', min($info[1], $info[2]));
-			$this->result->addCommon('max_players', $info[2]);
+			$this->result->addGeneral('hostname', $info[0]);
+			$this->result->addGeneral('num_players', min(intval($info[1]), intval($info[2])));
+			$this->result->addGeneral('max_players', intval($info[2]));
 		}
 	}
 	

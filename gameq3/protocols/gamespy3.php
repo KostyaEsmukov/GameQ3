@@ -33,35 +33,35 @@ class Gamespy3 extends \GameQ3\Protocols {
 	protected $name_long = "Gamespy3";
 	
 	protected $challenge = true;
+	protected $stage = null;
 	
 	public function init() {
-		if ($this->challenge)
-			$this->queue('challenge', 'udp', $this->packets['challenge'], array('response_count' => 1));
-		else
+		if ($this->challenge) {
+			$this->queue('all', 'udp', $this->packets['challenge'], array('response_count' => 1));
+			$this->stage = 'challenge';
+		} else {
 			$this->queue('all', 'udp', $this->packets['all']);
+			$this->stage = 'all';
+		}
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
-		if ($qid === 'challenge') {
-			$this->_process_challenge($requests['responses']);
-		} else
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'all') {
-			$this->_process_all($requests['responses']);
+			if ($this->stage === 'challenge') {
+				return $this->_process_challenge($requests['responses']);
+			} else
+			if ($this->stage === 'all') {
+				return $this->_process_all($requests['responses']);
+			}
 		}
 	}
 	
 	protected function _process_challenge($packets) {
-	/*
 		$buf = new \GameQ3\Buffer($packets[0]);
 		
 		$buf->skip(5);
-		$cc = intval($buf->readString());
-		$challenge_result = pack( "H*", sprintf("%08X", $cc));
-	*/
-	
-		$challenge = substr(preg_replace( "/[^0-9\-]/si", "", $packets[0]), 1);
+		$challenge = intval($buf->readString());
+
 
 		$challenge_result = sprintf(
 			"%c%c%c%c",
@@ -70,8 +70,9 @@ class Gamespy3 extends \GameQ3\Protocols {
 			( $challenge >> 8 ),
 			( $challenge >> 0 )
 			);
-	
+
 		$this->queue('all', 'udp', sprintf($this->packets['all'], $challenge_result));
+		$this->stage = 'all';
 	}
 	
 	protected function _preparePackets($packets) {
@@ -142,25 +143,25 @@ class Gamespy3 extends \GameQ3\Protocols {
 	protected function _put_var($key, $val) {
 		switch($key) {
 			case 'hostname':
-				$this->result->addCommon('hostname', $val);
+				$this->result->addGeneral('hostname', $val);
 				break;
 			case 'mapname':
-				$this->result->addCommon('map', $val);
+				$this->result->addGeneral('map', $val);
 				break;
 			case 'gamever':
-				$this->result->addCommon('version', $val);
+				$this->result->addGeneral('version', $val);
 				break;
 			case 'gamemode':
-				$this->result->addCommon('mode', $val);
+				$this->result->addGeneral('mode', $val);
 				break;
 			case 'numplayers':
-				$this->result->addCommon('num_players', intval($val));
+				$this->result->addGeneral('num_players', $val);
 				break;
 			case 'maxplayers':
-				$this->result->addCommon('max_players', intval($val));
+				$this->result->addGeneral('max_players', $val);
 				break;
 			case 'password':
-				$this->result->addCommon('password', $val == '1');
+				$this->result->addGeneral('password', $val == 1);
 				break;
 			default:
 				$this->result->addSetting($key, $val);
@@ -176,7 +177,8 @@ class Gamespy3 extends \GameQ3\Protocols {
 			if (strlen($key) == 0)
 				break;
 				
-			$val = $buf->readString();
+			$val = $buf->readString();			
+			$val = $this->filterInt($val);
 				
 			$this->_put_var($key, $val);
 		}
@@ -243,7 +245,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 						break;
 						
 					$val = trim($val);
-					$val = is_numeric($val) ? intval($val) : $val;
+					$val = $this->filterInt($val);
 						
 					if ($item_group === 'players') {
 						if (!isset($players[$i_pos]))
@@ -266,12 +268,22 @@ class Gamespy3 extends \GameQ3\Protocols {
 		}
 
 		foreach($teams as $team_id => $team_ar) {
+			if (!isset($team_ar['team'])) {
+				$this->debug("Bad teams array");
+				break; // teams are not so important
+			}
+			
 			$team_name = $team_ar['team'];
 			unset($team_ar['team']);
 			$this->result->addTeam($team_id, $team_name, $team_ar);
 		}
 		
 		foreach($players as $player_ar) {
+			if (!isset($player_ar['player'])) {
+				$this->debug("Bad players array");
+				return false;
+			}
+			
 			$name = $player_ar['player'];
 			$score = isset($player_ar['score']) ? $player_ar['score'] : null;
 			$teamid = isset($player_ar['team']) ? $player_ar['team'] : null;

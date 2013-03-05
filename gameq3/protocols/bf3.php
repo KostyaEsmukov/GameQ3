@@ -42,17 +42,15 @@ class Bf3 extends \GameQ3\Protocols {
 		if ($this->isRequested('players')) $this->queue('players', 'tcp', $this->packets['players']);
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
-			$this->_process_status($requests['responses']);
+			return $this->_process_status($requests['responses']);
 		} else
 		if ($qid === 'version') {
-			$this->_process_version($requests['responses']);
+			return $this->_process_version($requests['responses']);
 		} else
 		if ($qid === 'players') {
-			$this->_process_players($requests['responses']);
+			return $this->_process_players($requests['responses']);
 		}
 	}
 	
@@ -83,7 +81,7 @@ class Bf3 extends \GameQ3\Protocols {
 		$words = $this->_preparePackets($packets);
 		
 		if (isset($words[2]))
-			$this->result->addCommon('version', $words[2]);
+			$this->result->addGeneral('version', $words[2]);
 	}
 	
 	protected function _process_players($packets) {
@@ -118,10 +116,10 @@ class Bf3 extends \GameQ3\Protocols {
 					break;
 			}
 		}
-		if ($i_name === false || $i_score === false || $i_teamid === false) return;
+		if ($i_name === false || $i_score === false || $i_teamid === false) return false;
 
-		// Just incase this changed between calls.
-		$this->result->addCommon('num_players', $words[9]);
+		// Just in case this changed between calls.
+		$this->result->addGeneral('num_players', $this->filterInt($words[9]));
 
 		// Loop until we run out of positions
 		for($pos=(3+$num_tags);$pos<=$words_total;$pos+=$num_tags) {
@@ -131,10 +129,10 @@ class Bf3 extends \GameQ3\Protocols {
 			$m = array();
 			
 			foreach($tags as $tag_i => $tag) {
-				$m[$tag] = is_numeric($player[$tag_i]) ? intval($player[$tag_i]) : $player[$tag_i];
+				$m[$tag] = $this->filterInt($player[$tag_i]);
 			}
 			
-			$this->result->addPlayer($player[$i_name], intval($player[$i_score]), intval($player[$i_teamid]), $m);
+			$this->result->addPlayer($player[$i_name], $this->filterInt($player[$i_score]), $this->filterInt($player[$i_teamid]), $m);
 
 		}
 
@@ -144,11 +142,11 @@ class Bf3 extends \GameQ3\Protocols {
 	protected function _process_status($packets) {
 		$words = $this->_preparePackets($packets);
 		
-		$this->result->addCommon('hostname', $words[1]);
-		$this->result->addCommon('num_players', intval($words[2]));
-		$this->result->addCommon('max_players', intval($words[3]));
-		$this->result->addCommon('mode', $words[4]);
-		$this->result->addCommon('map', $words[5]);
+		$this->result->addGeneral('hostname', $words[1]);
+		$this->result->addGeneral('num_players', $this->filterInt($words[2]));
+		$this->result->addGeneral('max_players', $this->filterInt($words[3]));
+		$this->result->addGeneral('mode', $words[4]);
+		$this->result->addGeneral('map', $words[5]);
 
 		$this->result->addSetting('rounds_played', $words[6]);
 		$this->result->addSetting('rounds_total', $words[7]);
@@ -162,7 +160,7 @@ class Bf3 extends \GameQ3\Protocols {
 		// Loop for the number of teams found, increment along the way
 		for($id=1; $id<=$num_teams; $id++) {
 			// We have tickets, but no team name. great...
-			$this->result->addTeam($id, $id, array('tickets' => floatval($words[$index_current])));
+			$this->result->addTeam($id, $id, array('tickets' => $this->filterInt($words[$index_current])));
 
 			$index_current++;
 		}
@@ -171,8 +169,8 @@ class Bf3 extends \GameQ3\Protocols {
 		$this->result->addSetting('target_score', $words[$index_current]);
 		// it seems $words[$index_current + 1] is always empty
 		$this->result->addSetting('ranked', $words[$index_current + 2] === 'true' ? 1 : 0);
-		$this->result->addCommon('secure', $words[$index_current + 3] === 'true');
-		$this->result->addCommon('password', $words[$index_current + 4] === 'true');
+		$this->result->addGeneral('secure', $words[$index_current + 3] === 'true');
+		$this->result->addGeneral('password', $words[$index_current + 4] === 'true');
 		$this->result->addSetting('uptime', $words[$index_current + 5]);
 		$this->result->addSetting('round_time', $words[$index_current + 6]);
 

@@ -19,31 +19,26 @@
 
 namespace GameQ3\protocols;
  
-class Bf2 extends \GameQ3\Protocols\Gamespy3 {
-	protected $name = "bf2";
-	protected $name_long = "Battlefield 2";
+class Arma extends \GameQ3\Protocols\Gamespy2 {
+	protected $name = "arma";
+	protected $name_long = "Armed Assault";
 
-	protected $port = 29900;
+	protected $port = 2302;
 	
-	protected $packets = array(
-		'all' => "\xFE\xFD\x00\x10\x20\x30\x40\xFF\xFF\xFF\x01",
-	);
-	
-	protected $challenge = false;
-	
-	
+	/// TODO: teamid are strings. fix it.
+
 	protected function _put_var($key, $val) {
 		switch($key) {
 			case 'hostname':
-				$this->result->addGeneral('hostname', $val);
+				$this->result->addGeneral('hostname', iconv("ISO-8859-1//IGNORE", "utf-8", $val));
 				break;
-			case 'mapname':
+			case 'mission':
 				$this->result->addGeneral('map', $val);
 				break;
 			case 'gamever':
 				$this->result->addGeneral('version', $val);
 				break;
-			case 'gamemode':
+			case 'gametype':
 				$this->result->addGeneral('mode', $val);
 				break;
 			case 'numplayers':
@@ -52,16 +47,8 @@ class Bf2 extends \GameQ3\Protocols\Gamespy3 {
 			case 'maxplayers':
 				$this->result->addGeneral('max_players', $val);
 				break;
-			case 'bf2_reservedslots':
-				$this->result->addGeneral('private_players', $val);
-				$this->result->addSetting($key, $val);
-				break;
 			case 'password':
 				$this->result->addGeneral('password', $val == 1);
-				break;
-			case 'bf2_anticheat':
-				$this->result->addGeneral('secure', $val == 1);
-				$this->result->addSetting($key, $val);
 				break;
 			default:
 				$this->result->addSetting($key, $val);

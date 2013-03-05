@@ -37,7 +37,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		//'servergroup' => "servergrouplist\x0A",
 		//'channelgroup' => "channelgrouplist\x0A",
 		
-		'quit' => "quit\x0A",
+		//'quit' => "quit\x0A",
 	);
 
 	protected $port = 9987; // Default port, used if not set when instanced
@@ -114,27 +114,20 @@ class Teamspeak3 extends \GameQ3\Protocols {
 			//$reply_format []= 'channelgroup';
 		}
 		
-		$formed_packet .= $this->packets['quit'];
-		$reply_format []= 'cmd';
+		//$formed_packet .= $this->packets['quit'];
+		//$reply_format []= 'cmd';
 
 		$this->packet = $formed_packet;
 		$this->reply_format = $reply_format;
 	}
 	
 	public function init() {
-		$this->queue['all'] = array(
-			'addr' => $this->addr,
-			'port' => $this->query_port,
-			'transport' => 'tcp',
-			'packets' => $this->packet,
-		);
+		$this->queue('all', 'tcp', $this->packet, array('port' => $this->query_port) );
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'all') {
-			$this->_process_r($requests['responses']);
+			return $this->_process_r($requests['responses']);
 		}
 	}
 	
@@ -144,14 +137,13 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		
 		$result = array();
 		
-		if($buf->readString("\n") !== 'TS3') {
-			$this->debug(__METHOD__.": Header returned did not match.");
-			return false;
+		// remove header if present
+		if ($buf->lookAhead(3) === 'TS3') {
+			// TS3
+			$buf->readString("\n");
+			// Welcome to the serverquery blah-blah-blah
+			$buf->readString("\n");
 		}
-		
-		// Welcome to serverquery blah-blah-blah
-		$buf->readString("\n");
-		
 		
 		foreach($this->reply_format as $reply) {
 			$data = trim($buf->readString("\n"));
@@ -181,31 +173,33 @@ class Teamspeak3 extends \GameQ3\Protocols {
 			}
 
 			// We failed
-			if (!$this->_verify_response($data)) return;
+			if (!$this->_verify_response($data)) {
+				$this->debug($buf->getBuffer());
+				return;
+			}
 			
 		}
 		
 		foreach($result as $type => $reply) {
 			if ($type === "serverinfo") {
 				foreach($reply[0] as $key => $val) {
-					if (is_numeric($val))
-						$val = intval($val);
+					$val = $this->filterInt($val);
 						
 					switch($key) {
 						case 'virtualserver_name':
-							$this->result->addCommon('hostname', $val);
+							$this->result->addGeneral('hostname', $val);
 							break;
 						case 'virtualserver_flag_password':
-							$this->result->addCommon('password', ($val == '1'));
+							$this->result->addGeneral('password', ($val == 1));
 							break;
 						case 'virtualserver_clientsonline':
-							$this->result->addCommon('num_players', $val);
+							$this->result->addGeneral('num_players', $val);
 							break;
 						case 'virtualserver_maxclients':
-							$this->result->addCommon('max_players', $val);
+							$this->result->addGeneral('max_players', $val);
 							break;
 						case 'virtualserver_version':
-							$this->result->addCommon('version', $val);
+							$this->result->addGeneral('version', $val);
 							break;
 					}
 					$this->result->addSetting($key, $val);
@@ -217,8 +211,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 					unset($player['client_nickname']);
 					
 					foreach($player as $key => &$val) {
-						if (is_numeric($val))
-							$val = intval($val);
+						$val = $this->filterInt($val);
 					}
 					
 					// cid - channel id. But most probably we will not use that value as we don't use teams, so we don't pass to to teamid
@@ -228,8 +221,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 			if ($type === "channellist") {
 				foreach($reply as $channel) {
 					foreach($channel as $key => &$val) {
-						if (is_numeric($val))
-							$val = intval($val);
+						$val = $this->filterInt($val);
 					}
 					$cid = $channel['cid'];
 					unset($channel['cid']);

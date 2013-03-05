@@ -66,7 +66,7 @@ function print_table($data) {
 		'retry_count'
 	);
 	
-	$common_always = array(
+	$general_always = array(
 		'hostname',
 		'version',
 		'max_players',
@@ -86,14 +86,14 @@ function print_table($data) {
 	print("<table><thead><tr><td>Group</td><td>Variable</td><td>Value</td></tr></thead><tbody>\n");
 	
 	foreach($data as $group => $datac) {
-		if ($group !== 'info' && $group !== 'common' && $group !== 'settings' && $group !== 'players') {
+		if ($group !== 'info' && $group !== 'general' && $group !== 'settings' && $group !== 'players') {
 			$cls = empty($cls) ? ' class="uneven"' : '';
 			printf("<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls, $group, 'Keys count', count($datac));
 			continue;
 		}
 		
 		$grouph = $group;
-		if ($group === 'info' || $group === 'common') {
+		if ($group === 'info' || $group === 'general') {
 			$grouph = "<span class=\"key-always\">" . $group . "</span>";
 		}
 
@@ -104,8 +104,8 @@ function print_table($data) {
 				if (in_array($key, $info_always))
 					$key = "<span class=\"key-always\">" . $key . "</span>";
 			} else
-			if ($group === 'common') {
-				if (in_array($key, $common_always))
+			if ($group === 'general') {
+				if (in_array($key, $general_always))
 					$key = "<span class=\"key-always\">" . $key . "</span>";	
 			} else
 			if ($group === 'settings') {

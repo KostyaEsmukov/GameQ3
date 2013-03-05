@@ -46,17 +46,15 @@ class Unreal2 extends \GameQ3\Protocols {
 		if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
-			$this->_process_status($requests['responses']);
+			return $this->_process_status($requests['responses']);
 		} else
 		if ($qid === 'rules') {
-			$this->_process_rules($requests['responses']);
+			return $this->_process_rules($requests['responses']);
 		} else
 		if ($qid === 'players') {
-			$this->_process_players($requests['responses']);
+			return $this->_process_players($requests['responses']);
 		}
 	}
 	
@@ -159,12 +157,18 @@ class Unreal2 extends \GameQ3\Protocols {
 		// queryport
 		$buf->readInt32();
 		
-		$this->result->addCommon('hostname', str_replace("\xa0", "\x20", $this->_readBadPascalString($buf)));
-		$this->result->addCommon('map', str_replace("\xa0", "\x20", $buf->readPascalString(1)));
-		$this->result->addCommon('mode', str_replace("\xa0", "\x20", $buf->readPascalString(1)));
+		$this->result->addGeneral('hostname', str_replace("\xa0", "\x20", $this->_readBadPascalString($buf)));
+		$this->result->addGeneral('map', str_replace("\xa0", "\x20", $buf->readPascalString(1)));
+		$this->result->addGeneral('mode', str_replace("\xa0", "\x20", $buf->readPascalString(1)));
 		
-		$this->result->addCommon('num_players', $buf->readInt32());
-		$this->result->addCommon('max_players', $buf->readInt32());
+		$num_players = $buf->readInt32();
+		$this->result->addGeneral('num_players', $num_players);
+		$this->result->addGeneral('max_players', $buf->readInt32());
+		
+		// Ut2 sometimes doesn't send players packet when there are no players on the server
+		if ($num_players == 0)
+			$this->unCheck('players');
+		
 		/*
 		// ping
 		$buf->readInt32();
@@ -209,17 +213,14 @@ class Unreal2 extends \GameQ3\Protocols {
 			
 			switch($key) {
 				case 'IsVacSecured':
-					$this->result->addCommon('secure', ($val == 'true'));
+					$this->result->addGeneral('secure', ($val == 'true'));
 					break;
 				case 'ServerVersion':
-					$this->result->addCommon('version', $val);
+					$this->result->addGeneral('version', $val);
 					break;
 			}
 			
-			if ($key === "Mutator")
-				$this->result->addGroup("Mutators", $key, $val);
-			else
-				$this->result->addSetting($key, $val);
+			$this->result->addSetting($key, $val);
 		}
 	}
 	

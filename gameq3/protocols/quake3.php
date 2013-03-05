@@ -24,7 +24,6 @@ class Quake3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
 		'status' => "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x0A",
-		//self::PACKET_DETAILS => "\xFF\xFF\xFF\xFFgetinfo\x00",
 	);
 
 	protected $port = 27960; // Default port, used if not set when instanced
@@ -36,11 +35,9 @@ class Quake3 extends \GameQ3\Protocols {
 		$this->queue('status', 'udp', $this->packets['status'], array('response_count' => 1));
 	}
 
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
-			$this->_process_status($requests['responses']);
+			return $this->_process_status($requests['responses']);
 		}
 	}
 
@@ -69,20 +66,19 @@ class Quake3 extends \GameQ3\Protocols {
 		$max_players = false;
 		
 		// Key / value pairs
-		while ($buf_server->getLength())
-		{
+		while ($buf_server->getLength()) {
 			$key = $buf_server->readString('\\');
-			$val = $buf_server->readStringMulti(array('\\', "\x0a"), $delimfound);
+			$val = $this->filterInt($buf_server->readStringMulti(array('\\', "\x0a"), $delimfound));
 			
 			switch($key) {
-				case 'g_gametype': $this->result->addCommon('mode', $val); break;
-				case 'mapname': $this->result->addCommon('map', $val); break;
-				case 'shortversion': $this->result->addCommon('version', $val); break;
-				case 'sv_hostname': $this->result->addCommon('hostname', $val); break;
-				case 'sv_privateClients': $private_players = intval($val); break;
-				case 'ui_maxclients': $max_players = intval($val); break;
-				case 'pswrd': $this->result->addCommon('password', ($val != '0')); break;
-				case 'sv_punkbuster': $this->result->addCommon('secure', ($val != '0')); break;
+				case 'g_gametype': $this->result->addGeneral('mode', $val); break;
+				case 'mapname': $this->result->addGeneral('map', $val); break;
+				case 'shortversion': $this->result->addGeneral('version', $val); break;
+				case 'sv_hostname': $this->result->addGeneral('hostname', $val); break;
+				case 'sv_privateClients': $private_players = $val; break;
+				case 'ui_maxclients': $max_players = $val; break;
+				case 'pswrd': $this->result->addGeneral('password', ($val != 0)); break;
+				case 'sv_punkbuster': $this->result->addGeneral('secure', ($val != 0)); break;
 			}
 			$this->result->addSetting($key,$val);
 			
@@ -97,10 +93,10 @@ class Quake3 extends \GameQ3\Protocols {
 		}
 		
 		if (is_int($private_players)) {
-			$this->result->addCommon('private_players', $private_players);
-			$max_players -= $private_players;
+			$this->result->addGeneral('private_players', $private_players);
+			//$max_players -= $private_players;
 		}
-		$this->result->addCommon('max_players', $max_players);
+		$this->result->addGeneral('max_players', $max_players);
 
 		// Explode the arrays out
 		$players = explode("\x0A", $players_info);
@@ -109,14 +105,14 @@ class Quake3 extends \GameQ3\Protocols {
 		array_pop($players);
 
 		// Add total number of players
-		$this->result->addCommon('num_players', count($players));
+		$this->result->addGeneral('num_players', count($players));
 
 		// Loop the players
 		foreach($players AS $player_info) {
 			$buf = new \GameQ3\Buffer($player_info);
 
-			$score = $buf->readString("\x20");
-			$ping = $buf->readString("\x20");
+			$score = $this->filterInt($buf->readString("\x20"));
+			$ping = $this->filterInt($buf->readString("\x20"));
 			
 			// Skip first "
 			$buf->skip(1);

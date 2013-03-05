@@ -40,7 +40,7 @@ class Lfs extends \GameQ3\Protocols {
 		$this->url = sprintf($this->url, urlencode($this->server_info['hostname']));
 	}
 	
-	public function preFetch() {
+	protected function preFetch() {
 		// You have no right to judge me. I don't want to use curl for such simple task!
 		$context  = stream_context_create(array(
 			'http' => array(
@@ -49,12 +49,12 @@ class Lfs extends \GameQ3\Protocols {
 		));
 		$data = @file_get_contents($this->url, false, $context);
 		
-		if (!$data) return;
+		if (!$data) return false;
 		
 		preg_match("#<div class=\"HostName\">(.*?)</div>#i", $data, $match);		
-		if (!isset($match[1])) return;
+		if (!isset($match[1])) return false;
 		
-		$this->result->addCommon('hostname', $match[1]);
+		$this->result->addGeneral('hostname', $match[1]);
 		
 		preg_match_all("#<div id=\"([^\"]*)\"[^>]*><div class=\"Field1\">([^<]*)</div><div class=\"Field2\">([^<]*)</div></div>#i", $data, $match_all, PREG_SET_ORDER);
 		if (!is_array($match_all)) return;
@@ -63,13 +63,13 @@ class Lfs extends \GameQ3\Protocols {
 			if (!isset($match[3])) continue;
 			switch($match[1]) {
 				case 'Mode':
-					$this->result->addCommon('mode', $match[3]);
+					$this->result->addGeneral('mode', $match[3]);
 					break;
 				case 'Track':
-					$this->result->addCommon('map', $match[3]);
+					$this->result->addGeneral('map', $match[3]);
 					break;
 				case 'Version':
-					$this->result->addCommon('version', $match[3]);
+					$this->result->addGeneral('version', $match[3]);
 					break;
 				case 'Conns':
 					$c = explode('/', $match[3]);
@@ -77,8 +77,8 @@ class Lfs extends \GameQ3\Protocols {
 					$n = intval(trim($c[0]));
 					$m = intval(trim($c[1]));
 
-					$this->result->addCommon('num_players', $n);
-					$this->result->addCommon('max_players', $m);
+					$this->result->addGeneral('num_players', $n);
+					$this->result->addGeneral('max_players', $m);
 					break;
 				case 'Settings':
 					break;
@@ -88,10 +88,10 @@ class Lfs extends \GameQ3\Protocols {
 		}
 		
 		preg_match("#<div id=\"Users\" class=\"DataCont\"><div class=\"Field3\">(.*?)</div></div>#i", $data, $match);
-		if (!isset($match[1])) return;
+		if (!isset($match[1])) return false;
 		
 		preg_match_all("#<a class=\"User\" href=\"([^\"]*)\"[^>]*>([^>]*)</a>#i", $match[1], $match_all, PREG_SET_ORDER);
-		if (!is_array($match_all)) return;
+		if (!is_array($match_all)) return false;
 		
 		foreach($match_all as $match) {
 			if (!isset($match[2])) continue;

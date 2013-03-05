@@ -31,14 +31,16 @@ abstract class Protocols {
 	protected $connect_port;
 	protected $server_info;
 	private $unst;
-	protected $log = null;
+	private $log = null;
 	private $debug = false;
 	private $ping_sum = 0;
 	private $ping_cnt = 0;
 	private $retry_cnt = 0;
 	protected $result;
-	protected $queue = array();
+	private $queue = array();
+	private $queue_check = array();
 	protected $network = true;
+	private $force_offline;
 
 	public function __construct($server_info, $log) {
 		$this->log = $log;
@@ -76,7 +78,7 @@ abstract class Protocols {
 		$this->construct();
 	}
 	
-	final public function debug($str) {
+	final protected function debug($str) {
 		// Rise priority when we need
 		if ($this->debug)
 			$this->log->warning($str);
@@ -84,24 +86,42 @@ abstract class Protocols {
 			$this->log->debug($str);
 	}
 	
-	// call it to avoid sending requests that could be ignored by GameQ_Result.
+	final protected function error($str) {
+		$this->log->error($str);
+	}
+	
 	final protected function isRequested($s) {
 		return (!isset($this->unst[$s]));
 	}
 
-	final public function addPing($p) {
+	final protected function addPing($p) {
 		$this->ping_sum += $p;
 		$this->ping_cnt++;
 	}
 	
-	final public function addRetry($r) {
+	final protected function addRetry($r) {
 		$this->retry_cnt += $r;
+	}
+	
+	final protected function unCheck($name) {
+		unset($this->queue_check[$name]);
+	}
+	
+	protected function filterInt($var) {
+		if (is_string($var)) {
+			if (ctype_digit($var))
+				return intval($var);
+			if (is_numeric($var))
+				return floatval($var);
+		}
+		return $var;
 	}
 
 	final public function protocolInit() {
 		$this->ping_sum = 0;
 		$this->ping_cnt = 0;
 		$this->retry_cnt = 0;
+		$this->force_offline = false;
 		
 		$this->result = new Result($this->unst);
 		
@@ -115,26 +135,42 @@ abstract class Protocols {
 		$this->result->addInfo('short_name', $this->name);
 		$this->result->addInfo('long_name', $this->name_long);
 		
-		return $this->init();
+		if ($this->init() === false)
+			$this->force_offline = true;
 	}
 	
 	protected function construct() {
-		// @Overload
+		// Overload
 		return;
 	}
 
-	public function init() {
-		// @Overload
+	protected function init() {
+		// Overload
 		return;
 	}
 	
-	public function preFetch() {
-		// @Overload
+	protected function preFetch() {
+		// Overload
 		return;
 	}
 
-	public function processRequests($requests) {
-		// @Overload
+	protected function processRequests($qid, $requests) {
+		// Overload
+		return;
+	}
+	
+	final public function startRequestProcessing($qid, $requests) {
+		$this->addPing($requests['ping']);
+		$this->addRetry($requests['retry_cnt']);
+		$this->unCheck($qid);
+		
+		if ($this->processRequests($qid, $requests) === false)
+			$this->force_offline = true;
+	}
+	
+	final public function startPreFetch() {
+		if ($this->preFetch() === false)
+			$this->force_offline = true;
 		return;
 	}
 	
@@ -146,6 +182,8 @@ abstract class Protocols {
 	}
 	
 	protected function queue($name, $transport, $packets, $more = array() ) {
+		$this->queue_check[$name] = true;
+		
 		$this->queue[$name] = array(
 			'addr' => $this->addr,
 			'port' => $this->port,
@@ -153,8 +191,12 @@ abstract class Protocols {
 			'packets' => $packets,
 		);
 		
-		foreach($more as $key => $val)
-			$this->queue[$name][$key] = $val;
+		foreach($more as $key => $val) {
+			if ($key == 'nocheck')
+				$this->unCheck($name);
+			else
+				$this->queue[$name][$key] = $val;
+		}
 	}
 
 	final public function resultFetch() {
@@ -162,16 +204,24 @@ abstract class Protocols {
 		$additional_keys = array('private_players' => null, 'password' => false, 'version' => null, 'map' => null, 'mode' => null, 'secure' => false);
 		
 		$online = true;
+		
+		if ($this->force_offline)
+			$online = false;
+		
+		// Some request haven't been received, assume we failed
+		if (!empty($this->queue_check))
+			$online = false;
+			
 		foreach($important_keys as $key)
-			if (!$this->result->issetCommon($key)) {
+			if (!$this->result->issetGeneral($key)) {
 				$online = false;
 				break;
 			}
 		
 		if ($online) {
 			foreach($additional_keys as $key => $default)
-				if (!$this->result->issetCommon($key)) {
-					$this->result->addCommon($key, $default);
+				if (!$this->result->issetGeneral($key)) {
+					$this->result->addGeneral($key, $default);
 				}
 		}
 		

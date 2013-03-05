@@ -28,11 +28,11 @@ class Mohwf extends \GameQ3\Protocols\Bf3 {
 	protected function _process_status($packets) {
 		$words = $this->_preparePackets($packets);
 		
-		$this->result->addCommon('hostname', $words[1]);
-		$this->result->addCommon('num_players', intval($words[2]));
-		$this->result->addCommon('max_players', intval($words[3]));
-		$this->result->addCommon('mode', $words[4]);
-		$this->result->addCommon('map', $words[5]);
+		$this->result->addGeneral('hostname', $words[1]);
+		$this->result->addGeneral('num_players', $this->filterInt($words[2]));
+		$this->result->addGeneral('max_players', $this->filterInt($words[3]));
+		$this->result->addGeneral('mode', $words[4]);
+		$this->result->addGeneral('map', $words[5]);
 
 		$this->result->addSetting('rounds_played', $words[6]);
 		$this->result->addSetting('rounds_total', $words[7]);
@@ -46,7 +46,7 @@ class Mohwf extends \GameQ3\Protocols\Bf3 {
 		// Loop for the number of teams found, increment along the way
 		for($id=1; $id<=$num_teams; $id++) {
 			// We have tickets, but no team name. great...
-			$this->result->addTeam($id, $id, array('tickets' => floatval($words[$index_current])));
+			$this->result->addTeam($id, $id, array('tickets' => $this->filterInt($words[$index_current])));
 
 			$index_current++;
 		}
@@ -55,8 +55,8 @@ class Mohwf extends \GameQ3\Protocols\Bf3 {
 		$this->result->addSetting('target_score', $words[$index_current]);
 		// it seems $words[$index_current + 1] is always empty
 		$this->result->addSetting('ranked', $words[$index_current + 2] === 'true' ? 1 : 0);
-		$this->result->addCommon('secure', $words[$index_current + 3] === 'true');
-		$this->result->addCommon('password', $words[$index_current + 4] === 'true');
+		$this->result->addGeneral('secure', $words[$index_current + 3] === 'true');
+		$this->result->addGeneral('password', $words[$index_current + 4] === 'true');
 		$this->result->addSetting('uptime', $words[$index_current + 5]);
 		$this->result->addSetting('round_time', $words[$index_current + 6]);
 

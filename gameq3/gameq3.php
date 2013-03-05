@@ -282,7 +282,7 @@ class GameQ3 {
 				if (empty($ra['p'])) continue;
 				
 				try { // Protocols should handle exceptions by themselves
-					$process[$sid]['i']->processRequests(
+					$process[$sid]['i']->startRequestProcessing(
 						$process[$sid]['id'],
 						array(
 							'ping' => $ra['pg'],
@@ -303,7 +303,7 @@ class GameQ3 {
 		
 		$result = array();
 		foreach($servers_queried as $key => &$instance) {
-			$instance->preFetch();
+			$instance->startPreFetch();
 			$result[$key] = $instance->resultFetch();
 			$this->_applyFilters($key, $result[$key]);
 		}

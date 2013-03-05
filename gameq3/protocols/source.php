@@ -43,21 +43,18 @@ class Source extends \GameQ3\Protocols {
 			$this->queue('challenge', 'udp', $this->packets['challenge'], array('response_count' => 1));
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
-
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'challenge') {
-			$this->_process_challenge($requests['responses']);
+			return $this->_process_challenge($requests['responses']);
 		} else
 		if ($qid === 'details') {
-			$this->_process_details($requests['responses']);
+			return $this->_process_details($requests['responses']);
 		} else
 		if ($qid === 'rules') {
-			$this->_process_rules($requests['responses']);
+			return $this->_process_rules($requests['responses']);
 		} else
 		if ($qid === 'players') {
-			$this->_process_players($requests['responses']);
+			return $this->_process_players($requests['responses']);
 		}
 	}
 	
@@ -69,7 +66,7 @@ class Source extends \GameQ3\Protocols {
 		
 		if ($head !== "\xFF\xFF\xFF\xFF") {
 			$this->debug("Wrong challenge");
-			return;
+			return false;
 		}
 		
 		// 0x41 (?)
@@ -115,7 +112,7 @@ class Source extends \GameQ3\Protocols {
 			if($request_id & 0x80000000) {
 				// Check to see if we have Bzip2 installed
 				if(!function_exists('bzdecompress')) {
-					$this->log->error('Bzip2 is not installed.  See http://www.php.net/manual/en/book.bzip2.php for more info.');
+					$this->error('Bzip2 is not installed.  See http://www.php.net/manual/en/book.bzip2.php for more info.');
 					return false;
 				}
 
@@ -167,8 +164,7 @@ class Source extends \GameQ3\Protocols {
 	
 		$packet = $this->_preparePackets($packets);
 		
-		if (!$packet) return;
-
+		if (!$packet) return false;
 
 		// Create a new buffer
 		$buf = new \GameQ3\Buffer($packet);
@@ -176,13 +172,13 @@ class Source extends \GameQ3\Protocols {
 		$header = $buf->read(5);
 		if($header !== "\xFF\xFF\xFF\xFF\x44") {
 			$this->debug("Data for ".__METHOD__." does not have the proper header (should be 0xFF0xFF0xFF0xFF0x44). Header: ".bin2hex($header));
-			return;
+			return false;
 		}
 
 		// Pull out the number of players
 		$num_players = $buf->readInt8();
 
-		$this->result->addCommon('num_players', $num_players);
+		$this->result->addGeneral('num_players', $num_players);
 
 		// No players so no need to look any further
 		if($num_players === 0) {
@@ -205,7 +201,7 @@ class Source extends \GameQ3\Protocols {
 	
 		$packet = $this->_preparePackets($packets);
 		
-		if (!$packet) return;
+		if (!$packet) return false;
 		
 
 		$buf = new \GameQ3\Buffer($packet);
@@ -213,7 +209,7 @@ class Source extends \GameQ3\Protocols {
 		$header = $buf->read(5);
 		if($header !== "\xFF\xFF\xFF\xFF\x45") {
 			$this->debug("Data for ".__METHOD__." does not have the proper header (should be 0xFF0xFF0xFF0xFF0x45). Header: ".bin2hex($header));
-			return;
+			return false;
 		}
 
 		//  number of rules
@@ -226,23 +222,22 @@ class Source extends \GameQ3\Protocols {
 			$key = $buf->readString();
 			$val = $buf->readString();
 			
-			if (is_numeric($val))
-				$val = floatval($val);
+			$val = $this->filterInt($val);
 			
 			// I found only one game that reports its gamemode - tf2. l4d`s are stupid.
 			switch($key) {
-				case 'tf_gamemode_arena':	if ($val == '1') $m = 'arena'; break;
-				case 'tf_gamemode_cp':		if ($val == '1') $m = 'cp'; break;
-				case 'tf_gamemode_ctf':		if ($val == '1') $m = 'ctf'; break;
-				case 'tf_gamemode_mvm':		if ($val == '1') $m = 'mvm'; break;
-				case 'tf_gamemode_payload':	if ($val == '1') $m = 'payload'; break;
-				case 'tf_gamemode_sd':		if ($val == '1') $m = 'sd'; break;
+				case 'tf_gamemode_arena':	if ($val == 1) $m = 'arena'; break;
+				case 'tf_gamemode_cp':		if ($val == 1) $m = 'cp'; break;
+				case 'tf_gamemode_ctf':		if ($val == 1) $m = 'ctf'; break;
+				case 'tf_gamemode_mvm':		if ($val == 1) $m = 'mvm'; break;
+				case 'tf_gamemode_payload':	if ($val == 1) $m = 'payload'; break;
+				case 'tf_gamemode_sd':		if ($val == 1) $m = 'sd'; break;
 			}
 			$this->result->addSetting($key, $val);
 		}
 		
 		if ($m !== false)
-			$this->result->addCommon('mode', $m);
+			$this->result->addGeneral('mode', $m);
 	}
 	
 	
@@ -260,7 +255,7 @@ class Source extends \GameQ3\Protocols {
 		
 		if ($head !== "\xFF\xFF\xFF\xFF") {
 			$this->debug("Wrong header");
-			return;
+			return false;
 		}
 
 		// Get the type
@@ -274,7 +269,7 @@ class Source extends \GameQ3\Protocols {
 			$this->source_engine = true;
 		} else {
 			$this->debug("Data for ".__METHOD__." does not have the proper header type (should be 0x49|0x44|0x6d). Header type: 0x".bin2hex($type));
-			return;
+			return false;
 		}
 		
 
@@ -287,9 +282,9 @@ class Source extends \GameQ3\Protocols {
 			$buf->readInt8();
 		}
 
-		$this->result->addCommon('hostname', $buf->readString());
+		$this->result->addGeneral('hostname', $buf->readString());
 		
-		$this->result->addCommon('map', $buf->readString());
+		$this->result->addGeneral('map', $buf->readString());
 		
 		// Sometimes those names are changeg. Aware them.
 		$game_directory = $buf->readString();
@@ -307,23 +302,23 @@ class Source extends \GameQ3\Protocols {
 			// L4D1
 			if ($appid == 500) {
 				if (strpos($game_description, '- Co-op')) {
-					$this->result->addCommon('mode', 'coop');
+					$this->result->addGeneral('mode', 'coop');
 				} else
 				if (strpos($game_description, '- Survival')) {
-					$this->result->addCommon('mode', 'survival');
+					$this->result->addGeneral('mode', 'survival');
 				} else
 				if (strpos($game_description, '- Versus')) {
-					$this->result->addCommon('mode', 'versus');
+					$this->result->addGeneral('mode', 'versus');
 				}
 			}
 		}
 
-		$this->result->addCommon('num_players', $buf->readInt8());
-		$this->result->addCommon('max_players', $buf->readInt8());
+		$this->result->addGeneral('num_players', $buf->readInt8());
+		$this->result->addGeneral('max_players', $buf->readInt8());
 
 
 		if (!$this->source_engine) {
-			$this->result->addCommon('version', $buf->readInt8());
+			$this->result->addGeneral('version', $buf->readInt8());
 		} else {
 			// Gosh, who needs this info?!
 			$this->result->addSetting('num_bots', $buf->readInt8());
@@ -345,11 +340,11 @@ class Source extends \GameQ3\Protocols {
 		$d = strtolower($buf->read());
 		switch($d) {
 			case 'w': $ds = "Windows"; break;
-			default:  $ds = "Linux"; break;
+			default:  $ds = "Linux";
 		}
 		$this->result->addSetting('os', $ds);
 
-		$this->result->addCommon('password', ($buf->readInt8() == 1));
+		$this->result->addGeneral('password', ($buf->readInt8() == 1));
 
 
 		if (!$this->source_engine) {
@@ -371,7 +366,7 @@ class Source extends \GameQ3\Protocols {
 			}
 		}
 
-		$this->result->addCommon('secure', ($buf->readInt8() == 1));
+		$this->result->addGeneral('secure', ($buf->readInt8() == 1));
 
 		if (!$this->source_engine) {
 			$this->result->addSetting('num_bots', $buf->readInt8());
@@ -390,17 +385,16 @@ class Source extends \GameQ3\Protocols {
 					default: $ms = false;
 				}
 				if ($ms)
-					$this->result->addCommon('mode', $ms);
+					$this->result->addGeneral('mode', $ms);
 					
-				$this->result->addSetting('theship_witnesses', $buf->readInt8());
-				$this->result->addSetting('theship_duration', $buf->readInt8());
+				$this->result->addSetting('the_ship_witnesses', $buf->readInt8());
+				$this->result->addSetting('the_ship_duration', $buf->readInt8());
 			}
-			$this->result->addCommon('version', $buf->readString());
+			$this->result->addGeneral('version', $buf->readString());
 		}
 
 		unset($buf);
 
-		return;
 	}
 
 }

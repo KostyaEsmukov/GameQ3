@@ -55,17 +55,15 @@ class Samp extends \GameQ3\Protocols {
 		if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
 	}
 	
-	public function processRequests($qid, $requests) {
-		$this->addPing($requests['ping']);
-		$this->addRetry($requests['retry_cnt']);
+	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
-			$this->_process_status($requests['responses']);
+			return $this->_process_status($requests['responses']);
 		} else
 		if ($qid === 'rules') {
-			$this->_process_rules($requests['responses']);
+			return $this->_process_rules($requests['responses']);
 		} else
 		if ($qid === 'players') {
-			$this->_process_players($requests['responses']);
+			return $this->_process_players($requests['responses']);
 		}
 	}
 	
@@ -89,32 +87,32 @@ class Samp extends \GameQ3\Protocols {
 	
 	protected function _process_status($packets) {
 		$buf = $this->_preparePackets($packets);
-		if (!$buf) return;
+		if (!$buf) return false;
 		
 		// Pull out the server information
-		$this->result->addCommon('password', ($buf->readInt8() == 1));
-		$this->result->addCommon('num_players', $buf->readInt16());
-		$this->result->addCommon('max_players', $buf->readInt16());
+		$this->result->addGeneral('password', ($buf->readInt8() == 1));
+		$this->result->addGeneral('num_players', $buf->readInt16());
+		$this->result->addGeneral('max_players', $buf->readInt16());
 
 		/// TODO: check other charsets
-		$this->result->addCommon('hostname', iconv('windows-1251', 'UTF-8', $buf->read($buf->readInt32())));
-		$this->result->addCommon('mode', $buf->read($buf->readInt32()));
-		$this->result->addCommon('map', $buf->read($buf->readInt32()));
+		$this->result->addGeneral('hostname', iconv('windows-1251', 'UTF-8', $buf->read($buf->readInt32())));
+		$this->result->addGeneral('mode', $buf->read($buf->readInt32()));
+		$this->result->addGeneral('map', $buf->read($buf->readInt32()));
 	}
 	
 	protected function _process_rules($packets) {
 		$buf = $this->_preparePackets($packets);
-		if (!$buf) return;
+		if (!$buf) return false;
 		
 		// Number of rules
 		$buf->readInt16();
 
 		while ($buf->getLength()) {
 			$key = $buf->readPascalString();
-			$val = $buf->readPascalString();
+			$val = $this->filterInt($buf->readPascalString());
 			
 			if ($key === "version")
-				$this->result->addCommon('version', $val);
+				$this->result->addGeneral('version', $val);
 				
 			$this->result->addSetting($key, $val);
 		}
@@ -122,9 +120,9 @@ class Samp extends \GameQ3\Protocols {
 	
 	protected function _process_players($packets) {
 		$buf = $this->_preparePackets($packets);
-		if (!$buf) return;
+		if (!$buf) return false;
 		
-		$this->result->addCommon('num_players', $buf->readInt16());
+		$this->result->addGeneral('num_players', $buf->readInt16());
 		
 		while ($buf->getLength()) {
 			$id = $buf->readInt8();

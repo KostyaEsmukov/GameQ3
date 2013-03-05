@@ -69,13 +69,13 @@ while(true) {
 				." ".str_pad($val['info']['short_name'], 10)
 				." ".str_pad($val['info']['retry_count'], 2)
 				." ".str_pad(sprintf("%.2f", $val['info']['ping_average'])."ms", 10)
-				." ".($val['common']['password'] ? 'X' : 'O')
-				." ".($val['common']['secure'] ? 'V' : '-')
-				." ".str_pad($val['common']['hostname'], 50)
-				." ".str_pad(isset($val['common']['map']) ? $val['common']['map'] . (isset($val['common']['mode']) ? " [" . $val['common']['mode'] . "]" : "") : '', 20)
-				." ".$val['common']['num_players']." / ".$val['common']['max_players']
-				. (is_int($val['common']['private_players']) ? " (" . ( $val['common']['max_players'] + $val['common']['private_players']) . ")" : "")
-				. (isset($val['common']['version']) ? " [" . $val['common']['version'] ."]": "")
+				." ".($val['general']['password'] ? 'X' : 'O')
+				." ".($val['general']['secure'] ? 'V' : '-')
+				." ".str_pad($val['general']['hostname'], 50)
+				." ".str_pad(isset($val['general']['map']) ? $val['general']['map'] . (isset($val['general']['mode']) ? " [" . $val['general']['mode'] . "]" : "") : '', 20)
+				." ".$val['general']['num_players']." / ".$val['general']['max_players']
+				. (is_int($val['general']['private_players']) ? " (" . ( $val['general']['max_players'] + $val['general']['private_players']) . ")" : "")
+				. (isset($val['general']['version']) ? " [" . $val['general']['version'] ."]": "")
 				."\n";
 			
 			$retrys += $val['info']['retry_count'];
