@@ -19,12 +19,23 @@
  */
 
 namespace GameQ3\protocols;
- 
+
+// References:
+// http://bf2browser.googlecode.com/svn/trunk/ss.py
+// http://wiki.unrealadmin.org/UT3_query_protocol
+
 class Gamespy3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
 		'challenge' => "\xFE\xFD\x09\x10\x20\x30\x40",
 		'all' => "\xFE\xFD\x00\x10\x20\x30\x40%s\xFF\xFF\xFF\x01",
+		                                      // (1) (2) (3) (4)
+		/*
+			(1) - request host information (rules) (\x00 or \xFF)
+			(2) - request players information (\x00 or \xFF)
+			(3) - request teams information (\x00 or \xFF)
+			(4) - response format (\x00 or \x01)
+		*/
 	);
 
 	protected $port = false; // Default port, used if not set when instanced
@@ -78,66 +89,53 @@ class Gamespy3 extends \GameQ3\Protocols {
 	protected function _preparePackets($packets) {
 		$return = array();
 		
+		$last_packet = false;
 		// Get packet index, remove header
 		foreach ($packets as $index => $packet) {
 			// Make new buffer
 			$buf = new \GameQ3\Buffer($packet);
 
 			// Skip the header
-			$buf->skip(14);
+			if ($buf->read(1) !== "\x00") {
+				$this->debug("Wrong packet header");
+				continue;
+			}
+			
+			$buf->skip(4); // identifier
+			
+			if ($buf->read(9) !== "splitnum\x00") {
+				$this->debug("Wrong packet header");
+				continue;
+			}
+			
+			$packet_number = $buf->readInt8();
+			
+			// last packet
+			if ($packet_number >= 0x80) {
+				$last_packet = true;
+				$packet_number -= 0x80;
+			}
 
-			// Get the current packet and make a new index in the array
-			$return[$buf->readInt16()] = $buf->getBuffer();
+			$return[$packet_number] = $buf->getBuffer();
 		}
 
 		unset($buf, $packets);
-
-		// Sort packets, reset index
-		ksort($return);
-
-		// Grab just the values
-		$return = array_values($return);
-
-		// Compare last var of current packet with first var of next packet
-		// On a partial match, remove last var from current packet,
-		// variable header from next packet
-		for ($i = 0, $x = count($return); $i < $x - 1; $i++) {
-			// First packet
-			$fst = substr($return[$i], 0, -1);
-
-			// Second packet
-			$snd = $return[$i+1];
-
-			// Get last variable from first packet
-			$fstvar = substr($fst, strrpos($fst, "\x00")+1);
-
-			// Get first variable from last packet
-			$snd = substr($snd, strpos($snd, "\x00")+2);
-			$sndvar = substr($snd, 0, strpos($snd, "\x00"));
-
-			// Check if fstvar is a substring of sndvar
-			// If so, remove it from the first string
-			if (strpos($sndvar, $fstvar) !== false) {
-				$return[$i] = preg_replace("#(\\x00[^\\x00]+\\x00)$#", "\x00", $return[$i]);
-			}
-		}
-
-		// Now let's loop the return and remove any dupe prefixes
-		for($x = 1; $x < count($return); $x++) {
-			$buf = new \GameQ3\Buffer($return[$x]);
-
-			$prefix = $buf->readString();
-
-			// Check to see if the return before has the same prefix present
-			if(strstr($return[($x-1)], $prefix)) {
-				// Update the return by removing the prefix plus 2 chars
-				$return[$x] = substr(str_replace($prefix, '', $return[$x]), 2);
-			}
-
-			unset($buf);
+		
+		if (!$last_packet) {
+			$this->debug("No last packet received");
+			return false;
 		}
 		
-		return implode("", $return);
+		for($i = 0; $i < count($return); $i++) {
+			if (!isset($return[$i])) {
+				$this->debug("Packet " . $i . " wasn't received");
+				return false;
+			}
+		}
+		// prepare for foreach loop
+		ksort($return, SORT_NUMERIC);
+
+		return $return;
 	}
 	
 	protected function _put_var($key, $val) {
@@ -151,7 +149,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 			case 'gamever':
 				$this->result->addGeneral('version', $val);
 				break;
-			case 'gamemode':
+			case 'gametype':
 				$this->result->addGeneral('mode', $val);
 				break;
 			case 'numplayers':
@@ -169,127 +167,158 @@ class Gamespy3 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_all($packets) {
-		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
-
-		while($buf->getLength()) {
-			$key = $buf->readString();
-
-			if (strlen($key) == 0)
-				break;
-				
-			$val = $buf->readString();			
-			$val = $this->filterInt($val);
-				
-			$this->_put_var($key, $val);
-		}
+		$packets = $this->_preparePackets($packets);
 		
+		if ($packets === false) return false;
 
-		/*
-		 * Explode the data into groups. First is player, next is team (item_t) 
-		 * 
-		 * Each group should be as follows:
-		 * 
-		 * [0] => item_
-		 * [1] => information for item_
-		 * ...
-		 */
-		$data = explode("\x00\x00", $buf->getBuffer());
-
-		// By default item_group is blank, this will be set for each loop thru the data
-		$item_group = '';
-
-		// By default the item_type is blank, this will be set on each loop
-		$item_type = '';
-		
-		$teams = array();
-		$players = array();
-
-		// Loop through all of the $data for information and pull it out into the result
-		for($x=0; $x < count($data)-1; $x++) {
-			// Pull out the item
-			$item = $data[$x];
-			
-			// If this is an empty item, move on
-			if($item === '' || $item === "\x00")
-				continue;
-
-			
-			// Check to see if $item has a _ at the end, this is player info
-			if(substr($item, -1) == '_') {
-				$item_group = 'players';
-				$item_type = substr($item, 0, -1);
-				// strip non-printable chars
-				$item_type = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $item_type);
-
-				$i_pos = 1;
-			} else
-			// Check to see if $item has a _t at the end, this is team info
-			if(substr($item, -2) == '_t') {
-				$item_group = 'teams';
-				$item_type = substr($item, 0, -2);
-				// strip non-printable chars
-				$item_type = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $item_type);
-
-				$i_pos = 1;
-			}
-			// We can assume it is data belonging to a previously defined item
-			else {
-				$buf_temp = new \GameQ3\Buffer($item);
+		$fields = array();
+		foreach($packets as $data) { // Loop thru packets
+			$buf = new \GameQ3\Buffer($data);
+			while ($buf->getLength()) { // Loop thru sections
+				$section_num = $buf->readInt8();
 				
-				
-				// Get the values
-				while ($buf_temp->getLength()) {
-					$val = $buf_temp->readString();
-					// No value so break the loop, end of string
-					if ($val === '')
-						break;
-						
-					$val = trim($val);
-					$val = $this->filterInt($val);
-						
-					if ($item_group === 'players') {
-						if (!isset($players[$i_pos]))
-							$players[$i_pos] = array();
-						$players[$i_pos][$item_type] = $val;
-					} else
-					if ($item_group === 'teams') {
-						if (!isset($teams[$i_pos]))
-							$teams[$i_pos] = array();
-						$teams[$i_pos][$item_type] = $val;
-					}
-					
-					$i_pos++;
-
+				// Prepare field for array sections
+				if ($section_num != 0) {
+					if (!isset($fields[$section_num]))
+						$fields[$section_num] = array();
 				}
 				
-				// Unset out buffer
-				unset($buf_temp);
+				while($buf->getLength()) { // Loop thru fields
+					$field = $buf->readString();
+
+					// End of section
+					if ($field === "") {
+						break;
+					}
+
+					if ($section_num == 0) { // Process scalars
+						$val = $this->filterInt($buf->readString());
+						$this->_put_var($field, $val);
+					} else { // Process arrays
+						$element_num = $buf->readInt8();
+
+						if (!isset($fields[$section_num][$field]))
+							$fields[$section_num][$field] = array();
+
+						// Value index
+						$val_index = count($fields[$section_num][$field]);
+						
+						// We have extra items, remove them
+						if ($val_index > $element_num) {
+							foreach($fields[$section_num][$field] as $id => $val) {
+								if ($id >= $element_num) {
+									unset($fields[$section_num][$field][$id]);
+									$val_index--;
+								}
+							}
+						}
+
+						while($buf->getLength()) { // Loop thru values of an array
+							$val = $buf->readString();
+
+							// End of array. Arma2 returns team_ array that consists of ...\x00\x00\x00\x00...
+							if (
+								$val === ""
+								&& (count($fields[$section_num][$field]) >= count(reset($fields[$section_num])))
+							) {
+								break;
+							}
+							
+							$fields[$section_num][$field][$val_index]= $this->filterInt($val);
+							$val_index++;
+						}
+					}
+				}
+			}
+		}
+		
+		$res = true;
+		if (!empty($fields[1])) $res = $res && $this->_parse_arrays('players', $fields[1]);
+		if (!empty($fields[2])) $res = $res && $this->_parse_arrays('teams', $fields[2]);
+		
+		return $res;
+	}
+	
+	protected function _parse_arrays($task, &$data) {
+		$cnt = false;
+		$fields = array();
+		if ($task === 'players') {
+			$bot_players = 0;
+		}
+		foreach($data as $field => &$arr) {
+			if ($task === 'players') {
+				if (substr($field, -1) !== "_") {
+					$this->debug("Arrays are not consistent");
+					return false;
+				}
+				$field_name = substr($field, 0, -1);
+			} else
+			if ($task === 'teams') {
+				if (substr($field, -2) !== "_t") {
+					$this->debug("Arrays are not consistent");
+					return false;
+				}
+				$field_name = substr($field, 0, -2);
+			}
+			$fields[$field_name]= $field;
+			if ($cnt == false) {
+				$cnt = count($arr);
+				continue;
+			}
+			if ($cnt !== count($arr)) {
+				$this->debug("Arrays are not consistent");
+				return false;
 			}
 		}
 
-		foreach($teams as $team_id => $team_ar) {
-			if (!isset($team_ar['team'])) {
-				$this->debug("Bad teams array");
-				break; // teams are not so important
-			}
-			
-			$team_name = $team_ar['team'];
-			unset($team_ar['team']);
-			$this->result->addTeam($team_id, $team_name, $team_ar);
-		}
-		
-		foreach($players as $player_ar) {
-			if (!isset($player_ar['player'])) {
-				$this->debug("Bad players array");
+		if ($task === 'players') {
+			if (!isset($fields['player'])) {
+				$this->debug("Arrays are not consistent");
 				return false;
 			}
-			
-			$name = $player_ar['player'];
-			$score = isset($player_ar['score']) ? $player_ar['score'] : null;
-			$teamid = isset($player_ar['team']) ? $player_ar['team'] : null;
-			unset($player_ar['player'], $player_ar['score'], $player_ar['team']);
-			$this->result->addPlayer($name, $score, $teamid, $player_ar);
+		} else
+		if ($task === 'teams') {
+			if (!isset($fields['team'])) {
+				$this->debug("Arrays are not consistent");
+				return false;
+			}
 		}
-	
+		
+		for($i=0; $i < $cnt; $i++) {
+			$more = array();
+			foreach($fields as $field_name => $field) {
+				if (!isset($data[$field][$i])) {
+					$this->debug("Arrays are not consistent");
+					return false;
+				}
+				$more[$field_name] = $data[$field][$i];
+			}
+			
+			if ($task === 'players') {
+				// Sometimes player_ keys contain space (0x20) before the nickname
+				$name = trim($more['player']);
+				$score = isset($more['score']) ? $more['score'] : null;
+				$teamid = isset($more['team']) ? $more['team'] : null;
+				// Arma2 empty teams
+				if ($teamid === "") $teamid = null;
+				unset($more['player'], $more['score'], $more['team']);
+				if (isset($more['AIBot']) && $more['AIBot'] == 1)
+					$bot_players++;
+					
+				$this->result->addPlayer($name, $score, $teamid, $more);
+			} else
+			if ($task === 'teams') {
+				$team = $more['team'];
+				unset($more['team']);
+				$this->result->addTeam(($i+1), $team, $more);
+			}
+		}
+		
+		if ($task === 'players') {
+			$this->result->addGeneral('bot_players', $bot_players);
+		}
+		
+		return true;
 	}
+
 }

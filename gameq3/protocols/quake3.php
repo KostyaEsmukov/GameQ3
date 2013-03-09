@@ -49,7 +49,7 @@ class Quake3 extends \GameQ3\Protocols {
 
 		// Now lets verify the header
 		if($header != "\xFF\xFF\xFF\xFFstatusResponse\x0A\x5C") {
-			$this->debug('Unable to match Gamespy 3 challenge response header. Header: '. $header);
+			$this->debug('Unable to match Quake3 challenge response header. Header: '. $header);
 			return false;
 		}
 
@@ -88,7 +88,7 @@ class Quake3 extends \GameQ3\Protocols {
 		}
 		
 		if (!is_int($max_players)) {
-			$this->debug('Max_players is not an integer in gamespy3: '. var_export($max_players, true));
+			$this->debug('Max_players is not an integer in quake3: '. var_export($max_players, true));
 			return false;
 		}
 		

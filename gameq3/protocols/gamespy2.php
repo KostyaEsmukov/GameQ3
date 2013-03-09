@@ -126,11 +126,15 @@ class Gamespy2 extends \GameQ3\Protocols {
 		// Skip the header
 		$buf->skip(6);
 
+		$res = true;
+		
 		// Players are first
-		$this->_parse_playerteam('players', $buf);
+		$res = $res && $this->_parse_playerteam('players', $buf);
 
 		// Teams are next
-		$this->_parse_playerteam('teams', $buf);
+		$res = $res && $this->_parse_playerteam('teams', $buf);
+		
+		return $res;
 	}
 	
 	protected function _parse_playerteam($type, \GameQ3\Buffer &$buf) {
@@ -144,7 +148,22 @@ class Gamespy2 extends \GameQ3\Protocols {
 
 		// Loop until we run out of length
 		while ($buf->getLength()) {
-			$varnames[] = str_replace('_', '', $buf->readString());
+			$field = $buf->readString();
+			if ($type === 'players') {
+				if (substr($field, -1) !== "_") {
+					$this->debug("Arrays are not consistent");
+					return false;
+				}
+				$field = substr($field, 0, -1);
+			} else
+			if ($type === 'teams') {
+				if (substr($field, -2) !== "_t") {
+					$this->debug("Arrays are not consistent");
+					return false;
+				}
+				$field = substr($field, 0, -2);
+			}
+			$varnames[] = $field;
 
 			if ($buf->lookAhead() === "\x00") {
 				$buf->skip();
@@ -167,7 +186,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 				}
 			} else
 			if ($type === 'teams') {
-				if (!in_array('teamt', $varnames)) {
+				if (!in_array('team', $varnames)) {
 					$this->debug("Bad varnames array");
 					$ignore = true;
 				}
@@ -183,7 +202,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 			
 			if (!$ignore) {
 				if ($type === 'players') {
-					$name = iconv("ISO-8859-1//IGNORE", "utf-8", $more['player']); // some chars like (c) should be converted to utf8
+					$name = trim(iconv("ISO-8859-1//IGNORE", "utf-8", $more['player'])); // some chars like (c) should be converted to utf8
 					$score = $more['score'];
 					
 					$teamid = null;
@@ -195,8 +214,8 @@ class Gamespy2 extends \GameQ3\Protocols {
 					$this->result->addPlayer($name, $score, $teamid, $more);
 				} else
 				if ($type === 'teams') {
-					$name = $more['teamt'];
-					unset($more['teamt']);
+					$name = $more['team'];
+					unset($more['team']);
 					
 					$this->result->addTeam($team_id, $name, $more);
 					$team_id++;
@@ -208,5 +227,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 				break;
 			}
 		}
+		
+		return true;
 	}
 }

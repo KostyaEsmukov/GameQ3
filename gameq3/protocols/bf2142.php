@@ -19,20 +19,20 @@
 
 namespace GameQ3\protocols;
  
-class Arma2 extends \GameQ3\Protocols\Gamespy3 {
-	protected $name = "arma2";
-	protected $name_long = "Armed Assault 2";
+class Bf2142 extends \GameQ3\Protocols\Gamespy3 {
+	protected $name = "bf2142";
+	protected $name_long = "Battlefield 2142";
 
-	protected $port = 2302;
+	protected $port = 29900;
+	
 	
 	protected function _put_var($key, $val) {
 		switch($key) {
 			case 'hostname':
 				$this->result->addGeneral('hostname', $val);
 				break;
-			case 'mission':
+			case 'mapname':
 				$this->result->addGeneral('map', $val);
-				$this->result->addSetting($key, $val);
 				break;
 			case 'gamever':
 				$this->result->addGeneral('version', $val);
@@ -46,12 +46,19 @@ class Arma2 extends \GameQ3\Protocols\Gamespy3 {
 			case 'maxplayers':
 				$this->result->addGeneral('max_players', $val);
 				break;
+			case 'bf2142_reservedslots':
+				$this->result->addGeneral('private_players', $val);
+				$this->result->addSetting($key, $val);
+				break;
 			case 'password':
 				$this->result->addGeneral('password', $val == 1);
+				break;
+			case 'bf2142_anticheat':
+				$this->result->addGeneral('secure', $val == 1);
+				$this->result->addSetting($key, $val);
 				break;
 			default:
 				$this->result->addSetting($key, $val);
 		}
 	}
-
 }

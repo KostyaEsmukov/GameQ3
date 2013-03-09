@@ -209,7 +209,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		
 		while ($buf->getLength()) {
 			$key = $buf->readPascalString(1);
-			$val = $buf->readPascalString(1);
+			$val = $this->filterInt($buf->readPascalString(1));
 			
 			switch($key) {
 				case 'IsVacSecured':

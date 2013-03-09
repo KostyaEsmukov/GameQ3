@@ -43,7 +43,7 @@ class Bf2 extends \GameQ3\Protocols\Gamespy3 {
 			case 'gamever':
 				$this->result->addGeneral('version', $val);
 				break;
-			case 'gamemode':
+			case 'gametype':
 				$this->result->addGeneral('mode', $val);
 				break;
 			case 'numplayers':

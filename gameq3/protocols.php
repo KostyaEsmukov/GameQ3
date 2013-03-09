@@ -79,6 +79,9 @@ abstract class Protocols {
 	}
 	
 	final protected function debug($str) {
+		$bt = debug_backtrace(0);
+		$bt = $bt[0];
+		$str = '{' . $this->protocol . '|' . $bt['line'] . '|' . $bt['file'] .'} ' . $str;
 		// Rise priority when we need
 		if ($this->debug)
 			$this->log->warning($str);
@@ -201,7 +204,7 @@ abstract class Protocols {
 
 	final public function resultFetch() {
 		$important_keys = array('num_players', 'max_players', 'hostname');
-		$additional_keys = array('private_players' => null, 'password' => false, 'version' => null, 'map' => null, 'mode' => null, 'secure' => false);
+		$additional_keys = array('bot_players' => null, 'private_players' => null, 'password' => null, 'version' => null, 'map' => null, 'mode' => null, 'secure' => null);
 		
 		$online = true;
 		

@@ -21,11 +21,11 @@
 namespace GameQ3;
 
 class Log {
-	const DEBUG = 0x0001;
-	const WARNING = 0x0010;
-	const ERROR = 0x0100;
+	const DEBUG = 0b0001;
+	const WARNING = 0b0010;
+	const ERROR = 0b0100;
 	
-	private $loglevel = 0x0100;
+	private $loglevel = 0b0100;
 	private $trace = false;
 
 	public function setLogLevel($error, $warning, $debug, $trace) {
