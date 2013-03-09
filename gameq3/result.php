@@ -84,6 +84,27 @@ class Result {
 		);
 		return true;
 	}
+	
+	public function appendPlayer($name, $key, $value) {
+		if ($this->ign_teams) return false;
+		$append_index = false;
+		foreach($this->result['players'] as $index => &$player) {
+			if ($player['name'] === $name) {
+				$append_index = $index;
+				break;
+			}
+		}
+		if ($append_index === false) {
+			$this->addPlayer($name, null, null, array());
+		}
+		
+		if ($key === 'name' || $key === 'score' || $key === 'teamid')
+			$this->result['players'][$append_index][$key] = $value;
+		else
+			$this->result['players'][$append_index]['other'][$key] = $value;
+			
+		return true;
+	}
 
 	public function addTeam($teamid, $name, $other = array()) {
 		if ($this->ign_teams) return false;
@@ -91,6 +112,20 @@ class Result {
 			'name' => $name,
 			'other' => $other
 		);
+		return true;
+	}
+	
+	public function appendTeam($teamid, $key, $value) {
+		if ($this->ign_teams) return false;
+		if (!isset($this->result['teams'][$teamid])) {
+			$this->addTeam($teamid, null, array());
+		}
+		
+		if ($key === 'name')
+			$this->result['teams'][$teamid][$key] = $value;
+		else
+			$this->result['teams'][$teamid]['other'][$key] = $value;
+			
 		return true;
 	}
 

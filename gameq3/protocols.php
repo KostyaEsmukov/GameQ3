@@ -81,7 +81,7 @@ abstract class Protocols {
 	final protected function debug($str) {
 		$bt = debug_backtrace(0);
 		$bt = $bt[0];
-		$str = '{' . $this->protocol . '|' . $bt['line'] . '|' . $bt['file'] .'} ' . $str;
+		$str = '{' . $this->protocol . '|' . basename($bt['file']) . '|' . $bt['line'] .'} ' . $str;
 		// Rise priority when we need
 		if ($this->debug)
 			$this->log->warning($str);
@@ -114,7 +114,7 @@ abstract class Protocols {
 		if (is_string($var)) {
 			if (ctype_digit($var))
 				return intval($var);
-			if (is_numeric($var))
+			if (preg_match('/^[-]?[0-9.]+$/', $var))
 				return floatval($var);
 		}
 		return $var;
