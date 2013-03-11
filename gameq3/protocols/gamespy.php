@@ -182,6 +182,9 @@ class Gamespy extends \GameQ3\Protocols {
 		
 		$full = true;
 		
+		// BF1942: Teams' tickets defined in rules. We should save these values.
+		$this->teams = array();
+		
 		$data_cnt = count($data);
 		if ($data_cnt % 2 !== 0) {
 			$this->debug("Not even count of rules");
@@ -328,10 +331,14 @@ class Gamespy extends \GameQ3\Protocols {
 			}
 			
 			foreach($teams_r as $index => $val) {
-				// Bf2 tickets are set in rules, so we have to append teams rather that add them
-				$this->result->appendTeam($index, 'name', $val['team']);
-				foreach($val['more'] as $key => $value)
-					$this->result->appendTeam($index, $key, $value);
+			
+				if (!empty($this->teams[$index])) {
+					foreach($this->teams[$index] as $k => $v) {
+						$val['more'][$k] = $v;
+					}
+				}
+				
+				$this->result->addTeam($index, $val['team'], $val['more']);
 			}
 		}
 		

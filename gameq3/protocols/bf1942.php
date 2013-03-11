@@ -58,11 +58,13 @@ class Bf1942 extends \GameQ3\Protocols\Gamespy {
 				$this->result->addSetting($key, $val);
 				break;
 			case 'tickets1':
-				$this->result->appendTeam(1, 'tickets', $val);
+				$this->teams[1] = array();
+				$this->teams[1]['tickets'] = $val;
 				$this->result->addSetting($key, $val);
 				break;
 			case 'tickets2':
-				$this->result->appendTeam(2, 'tickets', $val);
+				$this->teams[2] = array();
+				$this->teams[2]['tickets'] = $val;
 				$this->result->addSetting($key, $val);
 				break;
 			default:

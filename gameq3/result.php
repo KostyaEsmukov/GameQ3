@@ -45,6 +45,10 @@ class Result {
 		}
 	}
 	
+	public function count($key) {
+		return count($this->result[$key]);
+	}
+	
 	public function addCustom($zone, $name, $value) {
 		$this->result[$zone][$name] = $value;
 		return true;
@@ -84,48 +88,13 @@ class Result {
 		);
 		return true;
 	}
-	
-	public function appendPlayer($name, $key, $value) {
-		if ($this->ign_teams) return false;
-		$append_index = false;
-		foreach($this->result['players'] as $index => &$player) {
-			if ($player['name'] === $name) {
-				$append_index = $index;
-				break;
-			}
-		}
-		if ($append_index === false) {
-			$this->addPlayer($name, null, null, array());
-		}
-		
-		if ($key === 'name' || $key === 'score' || $key === 'teamid')
-			$this->result['players'][$append_index][$key] = $value;
-		else
-			$this->result['players'][$append_index]['other'][$key] = $value;
-			
-		return true;
-	}
 
 	public function addTeam($teamid, $name, $other = array()) {
 		if ($this->ign_teams) return false;
-		$this->result['teams'] [$teamid]= array(
+		$this->result['teams'][$teamid]= array(
 			'name' => $name,
 			'other' => $other
 		);
-		return true;
-	}
-	
-	public function appendTeam($teamid, $key, $value) {
-		if ($this->ign_teams) return false;
-		if (!isset($this->result['teams'][$teamid])) {
-			$this->addTeam($teamid, null, array());
-		}
-		
-		if ($key === 'name')
-			$this->result['teams'][$teamid][$key] = $value;
-		else
-			$this->result['teams'][$teamid]['other'][$key] = $value;
-			
 		return true;
 	}
 
