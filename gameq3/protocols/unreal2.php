@@ -18,12 +18,6 @@
  *
  */
  
-/*
-	The most poorly done protocol ever.
-	But it rocks!
-	It is so funny to find character encodings, they are different everywhere!
-*/
- 
 namespace GameQ3\protocols;
  
 class Unreal2 extends \GameQ3\Protocols {

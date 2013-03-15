@@ -24,7 +24,7 @@ namespace GameQ3\protocols;
 	Check $result['info']['full'] for results reliability (described in ./gamespy3.php)
 	Also if you turn on debugging then you will see some information about corruptions in response.
 	
-	This is nota bug of query software, it is UT3's implementation of Gamespy3.
+	This is not a bug of query software, it is UT3's implementation of Gamespy3.
 	Here are some screenshots from serverbrowser. They are really strange:
 	http://img443.imageshack.us/img443/4982/ut320130310190116282.png
 	http://img46.imageshack.us/img46/6742/ut320130310191529232.png

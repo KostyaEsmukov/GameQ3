@@ -33,7 +33,18 @@ namespace GameQ3;
 
 // Autoload classes
 spl_autoload_extensions(".php");
-spl_autoload_register();
+
+// https://bugs.php.net/bug.php?id=51991
+if (version_compare(phpversion(), '5.3.3', '<')) {
+	spl_autoload_register(
+		function ($class) {
+			spl_autoload(str_replace('\\', DIRECTORY_SEPARATOR, ltrim($class, '\\')));
+		}
+	);
+} else {
+	spl_autoload_register();
+}
+
 
 class GameQ3 {
 
@@ -246,11 +257,13 @@ class GameQ3 {
 			if ($s_cnt > $this->servers_count)
 				break;
 		}
+		
+		$process = array();
 
 		while (true) {
 			if (empty($servers_left)) break;
 			
-			$process = array();
+			$final_process = true;
 
 			foreach($servers_left as $server_id => &$instance) {
 				try {
@@ -260,6 +273,8 @@ class GameQ3 {
 						unset($servers_left[$server_id]);
 						continue;
 					}
+					
+					$final_process = false;
 
 					foreach($instance_queue as $queue_id => &$queue_qopts) {
 						$sid = $this->sock->allocateSocket($server_id, $queue_id, $queue_qopts);
@@ -274,20 +289,25 @@ class GameQ3 {
 				}
 			}
 			
-			if (empty($process)) break;
-
-			$response = $this->sock->process();
+			if ($final_process) {
+				$response = $this->sock->finalProcess();
+				if (empty($response)) break;
+			} else {
+				$response = $this->sock->process();
+			}
 
 			foreach($response as $sid => $ra) {
-				if (empty($ra['p'])) continue;
-				
+				if (empty($ra['p']) || !isset($process[$sid])) continue;
+
 				try { // Protocols should handle exceptions by themselves
 					$process[$sid]['i']->startRequestProcessing(
 						$process[$sid]['id'],
 						array(
 							'ping' => $ra['pg'],
 							'retry_cnt' => ($ra['t']-1),
-							'responses' => $ra['p']
+							'responses' => $ra['p'],
+							'socket_recreated' => $ra['sr'],
+							'info' => $ra['i'],
 						)
 					);
 				}

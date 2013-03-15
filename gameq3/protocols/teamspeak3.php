@@ -132,7 +132,8 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_r($packets) {
-		$buf = new \GameQ3\Buffer(implode("", $packets));
+		$packet_data = implode("", $packets);
+		$buf = new \GameQ3\Buffer($packet_data);
 		unset($packets);
 		
 		$result = array();
@@ -172,12 +173,12 @@ class Teamspeak3 extends \GameQ3\Protocols {
 				$data = trim($buf->readString("\n"));
 			}
 
-			// We failed
-			if (!$this->_verify_response($data)) {
-				$this->debug($buf->getBuffer());
-				return;
+			$res = $this->_verify_response($data);
+			// Response is incorrect (this occures when some packets are not received due to timeout)
+			if ($res !== true) {
+				$this->debug("TS3 Error occured." . (is_string($res) ? $res : "\nBuffer:\n" . $packet_data ) );
+				return false;
 			}
-			
 		}
 		
 		foreach($result as $type => $reply) {
@@ -255,9 +256,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 			}
 
 			
-			$this->debug("Wrong response." . $errstr);
-		} else {
-			$this->debug("Wrong response " . $response);
+			return $errstr;
 		}
 		
 		return false;

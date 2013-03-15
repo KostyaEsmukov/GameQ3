@@ -79,18 +79,16 @@ abstract class Protocols {
 	}
 	
 	final protected function debug($str) {
-		$bt = debug_backtrace(0);
-		$bt = $bt[0];
-		$str = '{' . $this->protocol . '|' . basename($bt['file']) . '|' . $bt['line'] .'} ' . $str;
+		$str = '{' . $this->protocol . '} ' . $str;
 		// Rise priority when we need
 		if ($this->debug)
-			$this->log->warning($str);
+			$this->log->warning($str, true, 1);
 		else
-			$this->log->debug($str);
+			$this->log->debug($str, true, 1);
 	}
 	
 	final protected function error($str) {
-		$this->log->error($str);
+		$this->log->error($str, true, 1);
 	}
 	
 	final protected function isRequested($s) {
@@ -98,12 +96,15 @@ abstract class Protocols {
 	}
 
 	final protected function addPing($p) {
-		$this->ping_sum += $p;
-		$this->ping_cnt++;
+		if ($p !== null) {
+			$this->ping_sum += $p;
+			$this->ping_cnt++;
+		}
 	}
 	
 	final protected function addRetry($r) {
-		$this->retry_cnt += $r;
+		if ($r !== null)
+			$this->retry_cnt += $r;
 	}
 	
 	final protected function unCheck($name) {
@@ -114,8 +115,8 @@ abstract class Protocols {
 		if (is_string($var)) {
 			if (ctype_digit($var))
 				return intval($var);
-			if (preg_match('/^[-]?[0-9.]+$/', $var))
-				return floatval($var);
+			//if (preg_match('/^[-]?[0-9.]+$/', $var))
+			//	return floatval($var);
 		}
 		return $var;
 	}

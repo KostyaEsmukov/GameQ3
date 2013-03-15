@@ -30,7 +30,9 @@ class Lfs extends \GameQ3\Protocols {
 	
 	protected $network = false;
 	
-	protected $url = "http://www.lfsworld.net/hoststatus/?h=%s";
+	protected $url = "/hoststatus/?h=%s";
+	protected $addr = "www.lfsworld.net";
+	protected $port = 80;
 	
 	
 	protected function construct() {
@@ -40,18 +42,21 @@ class Lfs extends \GameQ3\Protocols {
 		$this->url = sprintf($this->url, urlencode($this->server_info['hostname']));
 	}
 	
-	protected function preFetch() {
-		// You have no right to judge me. I don't want to use curl for such simple task!
-		$context  = stream_context_create(array(
-			'http' => array(
-				'timeout' => 1,
-			)
-		));
-		$data = @file_get_contents($this->url, false, $context);
+	public function init() {
+		$this->queue('status', 'http', $this->url);
+	}
+	
+	protected function processRequests($qid, $requests) {
+		if ($qid === 'status') {
+			return $this->_process_status($requests['responses']);
+		}
+	}
+	
+	protected function _process_status($packets) {
+		$data = $packets[0];
+		unset($packets);
 		
-		if (!$data) return false;
-		
-		preg_match("#<div class=\"HostName\">(.*?)</div>#i", $data, $match);		
+		preg_match("#<div class=\"HostName\">(.*?)</div>#i", $data, $match);
 		if (!isset($match[1])) return false;
 		
 		$this->result->addGeneral('hostname', $match[1]);

@@ -23,6 +23,14 @@ namespace GameQ3;
 class Sockets {
 	private $log = null;
 	
+	/*
+		arrays from socket_select preserve keys as of PHP 5.3.0: https://bugs.php.net/bug.php?id=44197
+		arrays from stream_select preserve keys as of PHP 5.4.0: https://bugs.php.net/bug.php?id=53427
+		
+		As GameQ3 should support PHP 5.3.0, we should make workaround just for stream_select.
+	*/
+	private $stream_select_workaround = false;
+	
 	// Settings
 	private $connect_timeout = 1; // seconds
 	private $send_once_udp = 5;
@@ -30,21 +38,34 @@ class Sockets {
 	private $usleep_udp = 100; // ns
 	private $usleep_stream = 100; // ns
 	private $read_timeout = 600;
-	private $read_got_timeout = 20;
+	private $read_got_timeout = 30;
 	private $read_retry_timeout = 200;
 	private $loop_timeout = 2; // ms
 	private $socket_buffer = 8192;
 	private $send_retry = 1;
+	private $curl_select_timeout = 1.0; // s
+	private $curl_connect_timeout = 1200; // 800
+	private $curl_total_timeout = 1500; // 1500
+	private $curl_options = array();
 	
 	// Work arrays
 	private $cache_addr = array();
+	
 	private $sockets_udp = array();
 	private $sockets_udp_data = array();
 	private $sockets_udp_send = array();
 	private $sockets_udp_sid = array();
 	private $sockets_udp_socks = array();
+	
 	private $sockets_stream = array();
+	private $sockets_stream_id = array();
 	private $sockets_stream_data = array();
+	
+	private $curl_mh = null;
+	private $curl_running = false;
+	private $curl_extra = array();
+	private $curl_id = array();
+	
 	private $responses = array();
 	private $send = array();
 	private $recreated_udp = array(); // sctn => count
@@ -52,13 +73,25 @@ class Sockets {
 	
 	const SELECT_MAXTIMEOUT = 1; // ms
 	
+	const STREAM_PING_MAX_DIFF_MS = 20; // ms
+	const STREAM_PING_MAX_DIFF_MULTIPLY = 2;
+	
+	const CURL_DEFAULT_USERAGENT = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0";
+	const CURL_DEFAULT_MAXREDIRS = 3;
+	
 	public function __construct($log) {
 		$this->log = $log;
+		$this->stream_select_workaround = (version_compare(phpversion(), '5.4.0', '<'));
 	}
 	
 	public function setVar($key, $val) {
-		if (!is_int($value))
-			throw new GameQException("Value for setVar must be int. Got value: " . var_export($value, true));
+		if ($key == 'curl_options') {
+			if (!is_array($value))
+				throw new GameQException("Value for setVar must be an array. Got value: " . var_export($value, true));
+		} else {		
+			if (!is_int($value))
+				throw new GameQException("Value for setVar must be an integer. Got value: " . var_export($value, true));
+		}
 			
 		switch($key) {
 			case 'connect_timeout': $this->connect_timeout = $value; break;
@@ -72,7 +105,16 @@ class Sockets {
 			case 'socket_buffer': $this->socket_buffer = $value; break;
 			case 'send_retry': $this->send_retry = $value; break;
 			case 'timeout': $this->timeout = $value; break;
-
+			
+			case 'curl_select_timeout': $this->curl_select_timeout = ($value/1000); break;
+			case 'curl_connect_timeout': $this->curl_connect_timeout = $value; break;
+			case 'curl_total_timeout': $this->curl_total_timeout = $value; break;
+			case 'curl_options':
+				foreach($val as $opt => $val) {
+					$this->curl_options[$opt] = $val;
+				}
+				break;
+			
 			default:
 				throw new GameQException("Unknown key in setSockOption: " . var_export($key, true));
 		}
@@ -145,7 +187,7 @@ class Sockets {
 		);
 	}
 	
-	// Resolv address
+	// Resolve address
 	private function _resolveAddr($addr) {
 		if (isset($this->cache_addr[$addr])) {
 			return $this->cache_addr[$addr];
@@ -220,7 +262,8 @@ class Sockets {
 		
 		throw new SocketsException("Unable to resolv hostname '" . $addr . "'");
 	}
-
+	
+	
 	private function _createSocketUDP($sctn, $throw = false) {
 		// This should never happen
 		/*if (!isset($this->sockets_udp_data[$sctn]) {
@@ -251,8 +294,7 @@ class Sockets {
 		$this->sockets_udp[$sctn] = $sock;
 		return true;
 	}
-	
-	// Open socket
+
 	private function _createSocketStream($sid, $throw = false) {
 		// This should never happen
 		/*if (!isset($this->sockets_stream_data[$sid]) {
@@ -262,6 +304,7 @@ class Sockets {
 		if (isset($this->sockets_stream[$sid])) {
 			$this->recreated_stream[$sid] = true;
 			if (is_resource($this->sockets_stream[$sid])) {
+				if ($this->stream_select_workaround) unset($this->sockets_stream_id[(int)$this->sockets_stream[$sid]]);
 				@fclose($this->sockets_stream[$sid]);
 			}
 			unset($this->sockets_stream[$sid]);
@@ -283,7 +326,7 @@ class Sockets {
 		$errstr = null;
 		// Create the socket
 		$socket = @stream_socket_client($remote_addr, $errno, $errstr, $this->connect_timeout, STREAM_CLIENT_CONNECT);
-		
+
 		if (!is_resource($socket)) {
 			if ($throw) {
 				throw new SocketsException("Cannot create socket for address '". $remote_addr ."' Error[" . var_export($errno, true). "]: " . $errstr);
@@ -297,8 +340,46 @@ class Sockets {
 		stream_set_timeout($socket, $this->connect_timeout);
 		
 		$this->sockets_stream[$sid] = $socket;
+		$this->sockets_stream_data[$sid]['c'] = true;
+		
+		if ($this->stream_select_workaround) $this->sockets_stream_id[(int)$socket] = $sid;
 		return true;
 	}
+	
+	private function _createCurlHandle($sid, $url, $curl_opts, $return_headers) {
+		$ch = curl_init();
+		if ($ch == false)
+			throw new SocketsException("Cannot init curl (" . curl_errno() . ") " . curl_error());
+			
+		// http://stackoverflow.com/questions/9062798/php-curl-timeout-is-not-working
+		if (!defined('CURLOPT_CONNECTTIMEOUT_MS')) define('CURLOPT_CONNECTTIMEOUT_MS', 156);
+
+		curl_setopt_array($ch, array(
+			CURLOPT_CONNECTTIMEOUT_MS => $this->curl_connect_timeout,
+			CURLOPT_TIMEOUT_MS => $this->curl_total_timeout,
+			CURLOPT_MAXREDIRS => self::CURL_DEFAULT_MAXREDIRS,
+			CURLOPT_USERAGENT => self::CURL_DEFAULT_USERAGENT,
+			// We are not going to post any sensitive information
+			CURLOPT_SSL_VERIFYPEER => false,
+			CURLOPT_SSL_VERIFYHOST => 0,
+		));
+		curl_setopt_array($ch, $this->curl_options);
+		curl_setopt_array($ch, $curl_opts);
+		curl_setopt_array($ch, array(
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_HEADER => false,
+			//CURLOPT_MUTE => true,
+			CURLOPT_NOSIGNAL => true,
+			CURLOPT_URL => $url,
+		));
+		
+		if ($return_headers)
+			curl_setopt($ch, CURLOPT_HEADER, true);
+			
+		return $ch;
+	}
+	
 	
 	private function _writeSocketUDP($sid, &$packets) {
 		if (!isset($this->sockets_udp_send[$sid])) return false;
@@ -327,7 +408,6 @@ class Sockets {
 		return true;
 	}
 	
-	
 	private function _writeSocketStream($sid, &$packets, $retry = false) {
 		// socket failed.
 		if (!isset($this->sockets_stream[$sid]) || !is_resource($this->sockets_stream[$sid])) {
@@ -341,6 +421,8 @@ class Sockets {
 				return false;
 			}
 		}
+		
+		$this->sockets_stream_data[$sid]['c'] = false;
 		
 		foreach($packets as &$packet) {
 			$er = fwrite($this->sockets_stream[$sid], $packet);
@@ -362,6 +444,7 @@ class Sockets {
 		return true;
 	}
 	
+	
 	// Push request queue into class instance and prepare sockets
 	public function allocateSocket($server_id, $queue_id, $queue_opts) {
 		if (empty($queue_opts['transport']))
@@ -371,22 +454,25 @@ class Sockets {
 			
 		$proto = $queue_opts['transport'];
 		$packs = $queue_opts['packets'];
-		if (!is_array($packs))
-			$packs = array($packs);
-			
-		if ($proto == 'udp' || $proto = 'tcp') {
+
+		if ($proto === 'udp' || $proto === 'tcp' || $proto === 'http') {
 			if (empty($queue_opts['addr']) || !is_string($queue_opts['addr']))
 				throw new SocketsConfigException("Missing valid 'addr' key in allocateSocket() function");
 			if (empty($queue_opts['port']) || !is_int($queue_opts['port']))
 				throw new SocketsConfigException("Missing valid 'port' key in allocateSocket() function");
-				
-			// some domains may have multiple ip addreses. to avoid different addreses, resolved from one domain, we going to use resolved IPs in sid
-			list($domain, $data) = $this->_resolveAddr($queue_opts['addr']);
-			$domain_str = ($domain == AF_INET ? '4' : '6');
-			$port = $queue_opts['port'];
 			
+			if ($proto === 'http') {
+				if (!is_string($packs))
+					throw new SocketsConfigException("Packets key for HTTP protocol must be a string in allocateSocket() function");
+				$data = $queue_opts['addr'];
+			} else {
+				// some domains may have multiple ip addreses. to avoid different addreses, resolved from one domain, we going to use resolved IPs in sid
+				list($domain, $data) = $this->_resolveAddr($queue_opts['addr']);
+				$domain_str = ($domain == AF_INET ? '4' : '6');
+			}
+			$port = $queue_opts['port'];
 		} else
-		if ($proto == 'unix' || $proto = 'udg') {
+		if ($proto === 'unix' || $proto === 'udg') {
 			if (empty($queue_opts['path']) || !is_int($queue_opts['path']))
 				throw new SocketsConfigException("Missing valid 'path' key in allocateSocket() function");
 				
@@ -397,10 +483,56 @@ class Sockets {
 		} else {
 			throw new SocketsConfigException("Unknown protocol '" . $proto . "'");
 		}
-	
-	
+		
+			
+		if ($proto === 'http') {
+			if (!$this->curl_running || is_null($this->curl_mh)) {
+				$this->curl_mh = curl_multi_init();
+				$this->curl_running = true;
+			}
+			
+			// There is no need to identify curl handles by input data, thus we can generate random sid.
+			$sid = 'Curl' . $data . $port . uniqid();
+		
+			$scheme = (isset($queue_opts['scheme']) ? $queue_opts['scheme'] : 'http');
+			$url = $scheme . '://' . $data . ':' . $port . $packs;
+
+			$curl_opts = (isset($queue_opts['curl_opts']) ? $queue_opts['curl_opts'] : array());
+			$return_headers = (isset($queue_opts['return_headers']) ? $queue_opts['return_headers'] : false);
+			
+			/*
+			// Multi handle
+			private $curl_mh = null;
+			
+			// Is curl still running?
+			private $curl_running = false;
+			
+			// Curl settings array
+			private $curl_extra = array();
+			sid => array('h' => return_headers)
+			
+			// For identification of sid by handle
+			private $curl_id = array();
+			resource_id => sid
+			*/
+
+			$this->curl_extra[$sid] = array();
+			$ch = $this->_createCurlHandle($sid, $url, $curl_opts, $return_headers);
+			$this->curl_extra[$sid]['h'] = $return_headers;
+			$this->curl_id[(int)$ch] = $sid;
+
+			curl_multi_add_handle($this->curl_mh, $ch);
+
+			// No need in $responses for curl
+			
+			return $sid;
+		}
+			
+		if (!is_array($packs))
+			$packs = array($packs);
+			
 		$sid = $server_id.':'.$queue_id.':'.$proto.':'.$domain_str.':'.$data.':'.($port !== false ? $port : "");
-		if ($proto == 'udp') {
+		if ($proto === 'udp') {
 			// domain_str added to prevent mix of ipv4 and ipv6 (the chanse of this is about zero) sids in one sidnt
 			$sidnt = $domain_str.':'.$data.':'.$port;
 			/*
@@ -458,15 +590,20 @@ class Sockets {
 				'r' => (!isset($queue_opts['no_retry']) || $queue_opts['no_retry'] !== true), // retry send if no reply
 				'p' => $packs, // packets to send
 			);
+			
 		} else {
 			/*
 			// we are going to do all interesting work with this array
 			private $sockets_stream = array();
 			sid => socket_resource
 			
-			// for socket recreation
+			// for socket recreation and cleaning
 			private $sockets_stream_data = array();
-			sid => array('pr' => proto, 'd' => data, 'p' => port)
+			sid => array('pr' => proto, 'd' => data, 'p' => port, 'c' => just_created)
+			
+			// for stream_select workaround (see header of this class)
+			private $sockets_stream_id = array();
+			resource_id => sid
 			*/
 			if (!isset($this->sockets_stream[$sid])) {
 				if ($domain === AF_INET6)
@@ -475,7 +612,8 @@ class Sockets {
 				$this->sockets_stream_data[$sid] = array(
 					'pr' => $proto,
 					'd' => $data,
-					'p' => $port
+					'p' => $port,
+					//'c' => true, // just created
 				);
 				$this->_createSocketStream($sid, true);
 			}
@@ -488,28 +626,39 @@ class Sockets {
 		}
 	
 		$this->responses[$sid] = array(
-			'sr' => false,		// Socket recreated
-			'p' => array(),		// Responses
-			'pg' => null,		// Time between first sent packet and first got packet (ping)
-			't' => 0,		// Extra tries
-			'rc' => 0,		// Current responses count
-			'mrc' => 		// Maximum responses count
+			'sr' => false,          // Socket recreated
+			'p' => array(),         // Responses
+			'pg' => null,           // Time between first sent packet and first got packet (ping)
+			't' => 0,               // Extra tries
+			'rc' => 0,              // Current responses count
+			'mrc' =>                // Maximum responses count
 				( (isset($queue_opts['response_count']) && is_int($queue_opts['response_count']))
 				? $queue_opts['response_count'] : false),
-			//'st' => 0,		// Microtime of last send
-			'rt' => 0.		// Last receive time
+			//'st' => 0,              // Microtime of last send
+			'rt' => 0,              // Last receive time
+			'i' => null,            // Information about request. Used for HTTP.
 		);
 		return $sid;
 	}
 	
 	private function _procCleanSockets() {
+		$sockets_stream = $this->sockets_stream;
 		while (true) {
 			if (empty($this->sockets_stream)) break;
 			$write = null;
-			$except = $this->sockets_stream;
-			$read = $this->sockets_stream;
-			if (!stream_select($read, $write, $except, 0)) break;
+			$except = $sockets_stream;
+			$read = $sockets_stream;
+			if (!@stream_select($read, $write, $except, 0)) break;
+			$this->_stream_selectWorkaround($read);
+			$this->_stream_selectWorkaround($except);
+			
 			foreach($read as $sid => &$sock) {
+				// Skip just created sockets as there can be hello/welcome packets
+				if ($this->sockets_stream_data[$sid]['c'] == true) {
+					unset($sockets_stream[$sid]); // don't select this socket
+					continue;
+				}
+				
 				$buf = stream_socket_recvfrom($sock, $this->socket_buffer);
 				if ($buf === false || strlen($buf) == 0) {
 					$this->log->debug("Recreating stream socket. " . $sid);
@@ -527,7 +676,7 @@ class Sockets {
 			$write = null;
 			$except = $this->sockets_udp;
 			$read = $this->sockets_udp;
-			if (!socket_select($read, $write, $except, 0)) break;
+			if (!@socket_select($read, $write, $except, 0)) break;
 			foreach($read as $sctn => &$sock) {
 				$buf = "";
 				$name = "";
@@ -634,16 +783,31 @@ class Sockets {
 		return $long_to;
 	}
 	
+	private function _stream_selectWorkaround(&$select) {
+		if (!$this->stream_select_workaround) return;
+
+		$res = array();
+		foreach($select as $key => &$socket) {
+			$sock_id = (int)$socket;
+			if (!isset($this->sockets_stream_id[$sock_id])) {
+				$this->log->debug("Unknown stream socket id: " . $sock_id);
+				@fclose($socket);
+			}
+			$sid = $this->sockets_stream_id[$sock_id];
+			$res[$sid] = $socket;
+		}
+		$select = $res;
+	}
+	
 	private function _procRead($start_time, $timeout, &$responses, &$read_udp, &$read_udp_sctn, &$read_udp_sid, &$read_stream) {
 		foreach(array(true, false) as $is_udp) {
 			$tio = (($start_time - microtime(true))*1000 + $timeout) * 1000;
 
-			if ($is_udp && ($tio <= 0)) { // first loop
+			if ($is_udp && ($tio <= 0)) { // first iteration. Breaks parent loop when timed out
 				return false;
 			}
 			
 			$tio = max(0,min($tio, self::SELECT_MAXTIMEOUT*1000));
-			
 			$write = null; // we don't need to write
 			if ($is_udp) {
 				if (empty($read_udp)) continue;
@@ -655,12 +819,14 @@ class Sockets {
 				$except = $read_stream; // check for errors
 				$read = $read_stream; // incoming packets
 				$sr = @stream_select($read, $write, $except, 0, $tio);
+				$this->_stream_selectWorkaround($read);
+				$this->_stream_selectWorkaround($except);
 			}
 
 			// as there can be much packets on a single socket, we are going to read them until we are done
 			while (true) {
 				if ($sr === false) {
-					// nothing to scare
+					// nothing bad
 					break;
 				} else
 				if ($sr == 0) {
@@ -726,12 +892,25 @@ class Sockets {
 						unset($this->send[$sid]);
 						
 						$responses[$sid]['rc']++;
-						$responses[$sid]['rt'] = $recv_time;
 						$responses[$sid]['p'] []= $buf;
 						
 						if ($responses[$sid]['pg'] === null) {
 							$responses[$sid]['pg'] = ($recv_time - $responses[$sid]['st']);
+						} else {
+							// Check and correct ping, because hello/welcome packet might come before first write, in this case ping will be too little
+							if (!$is_udp) {
+								$prev_ping = ($responses[$sid]['rt'] - $responses[$sid]['st']);
+								$cur_ping = ($recv_time - $responses[$sid]['st']);
+								//$this->log->debug("Cur ping: " . ($cur_ping*1000));
+								
+								// If ping is has changed too much, correct it
+								if ( ($cur_ping-$prev_ping > self::STREAM_PING_MAX_DIFF_MS) || ($cur_ping/$prev_ping > self::STREAM_PING_MAX_DIFF_MULTIPLY)) {
+									$responses[$sid]['pg'] = $cur_ping;
+								}
+							}
 						}
+						
+						$responses[$sid]['rt'] = $recv_time;
 							
 						if (($responses[$sid]['mrc'] > 0) && ($responses[$sid]['rc'] >= $responses[$sid]['mrc'])) {
 							if ($is_udp) {
@@ -779,6 +958,8 @@ class Sockets {
 					$except = $read_stream; // check for errors
 					$read = $read_stream; // incoming packets
 					$sr = @stream_select($read, $write, $except, 0);
+					$this->_stream_selectWorkaround($read);
+					$this->_stream_selectWorkaround($except);
 				}
 			}
 		}
@@ -820,19 +1001,156 @@ class Sockets {
 		}
 	}
 	
-	public function process() {
+	
+	private function _fillCurlResponse($sid, &$ch, $info) {
+		if ($info['msg'] !== CURLMSG_DONE) return false;
+		
+		// $info['result'] and curl_errno() should be the same
+		$errno = curl_errno($ch);
+		$error = curl_error($ch);
+		if ($info['result'] !== CURLE_OK || $errno !== CURLE_OK || $error != "") {
+			$this->log->debug("HTTP request ended with an error (" . $info['result'] . ") " . $error);
+			return false;
+		}
+		
+		$body = curl_multi_getcontent($ch);
+		$curl_getinfo = curl_getinfo($ch);
+		
+		curl_multi_remove_handle($this->curl_mh, $ch);
+		curl_close($ch);
+		
+		$res = true;
+		
+		if (is_bool($body)) {
+			$res = $body;
+			$body = null;
+		}
+		
+		if (!$res) {
+			$this->log->debug("Curl returned false but it is not an error"); // this should never happen
+			return false;
+		}
+		
+		$result = array();
+		$result['i'] = array();
+		
+		if ($this->curl_extra[$sid]['h']) {
+			if (is_string($body)) {
+				$headers = trim(substr($body, 0, $curl_getinfo["header_size"]));
+				$body = substr($body, $curl_getinfo["header_size"]);
+				
+				// Pop headers from the latest request
+				$headers = explode("\r\n\r\n", $headers);
+				$headers = end($headers);
+				
+				if ($this->curl_extra[$sid]['h'] === 'raw' || $this->curl_extra[$sid]['h'] === 'both') {
+					$result['i']['headers_raw'] = $headers;
+				}
+				if ($this->curl_extra[$sid]['h'] !== 'raw') {
+					$headers_array = array();
+					$headers = explode("\n", $headers);
+					
+					foreach($headers as $header) {
+						if (empty($header) || strpos($header, ":") === false) continue;
+						list($key, $val) = explode(":", $header, 2);
+						$headers_array[strtolower(trim($key))] = trim($val);
+					}
+					$result['i']['headers'] = $headers_array;
+				}
+			} else {
+				if ($this->curl_extra[$sid]['h'] === 'raw' || $this->curl_extra[$sid]['h'] === 'both') {
+					$result['i']['headers_raw'] = '';
+				}
+				if ($this->curl_extra[$sid]['h'] !== 'raw') {
+					$result['i']['headers'] = array();
+				}
+			}
+		}
 
+		$result['p'] = array($body);
+		
+		$result['i']['curl_getinfo'] = $curl_getinfo["content_type"];
+		
+		$result['i']['errno'] = $errno;
+		$result['i']['error'] = $error;
+		
+		$result['pg'] = isset($curl_getinfo["total_time"]) ? $curl_getinfo["total_time"] : null;
+		
+		return $result;
+	}
+	
+	private function _procCurl(&$responses, $final) {
+		if (is_null($this->curl_mh) || !$this->curl_running) return;
+		
+		while (true) {
+			$select = curl_multi_select($this->curl_mh, ($final ? 0 : $this->curl_select_timeout));
+			if ($select == -1) break;
+			do {
+				$mrc = curl_multi_exec($this->curl_mh, $active);
+			} while ($mrc == CURLM_CALL_MULTI_PERFORM);
+			if (!$active || $mrc !== CURLM_OK) {
+				$this->curl_running = false; // Done or error occured
+				if ($mrc !== CURLM_OK) {
+					$this->log->debug("Curl stack error (" . $mrc . ") " . curl_error());
+				}
+				break;
+			}
+			if (!$final) break;
+		}
+		
+		while(true) {
+			$info = curl_multi_info_read($this->curl_mh);
+			if ($info == false) break; // Nothing to read for now
+			$ch = $info['handle'];
+			$ch_id = (int)$ch;
+			if (!isset($this->curl_id[$ch_id])) {
+				$this->log->debug('Curl handle not found in $this->curl_id');
+				continue;
+			}
+			$sid = $this->curl_id[$ch_id];
+			
+			$res = $this->_fillCurlResponse($sid, $ch, $info);
+			
+			unset($this->curl_id[$ch_id]);
+			unset($this->curl_extra[$sid]);
+			
+			if (!$res) continue;
+
+			$responses[$sid] = array(
+				'sr' => null,           // Socket recreated
+				'p' => $res['p'],       // Responses
+				'pg' => $res['pg'],     // Time between first sent packet and first got packet (ping)
+				't' => 1,               // Extra tries
+				'i' => $res['i'],       // Information about request. Used for HTTP.
+			);
+		}
+		
+		if (!$this->curl_running) {
+			curl_multi_close($this->curl_mh);
+			
+			// Cleanup
+			$this->curl_mh = null;
+			$this->curl_running = false;
+			$this->curl_extra = array();
+			$this->curl_id = array();
+		}
+	}
+
+	
+	public function process() {
 		$responses = &$this->responses;
 		unset($this->responses);
 
 		// Reset sockets as we could get something while we didn't waited for data. We don't need it.
 		$this->_procCleanSockets();
 
-		// empty var for passing by reference
-		$n = null;
-		// For select
+		// Run curl requests
+		if (!is_null($this->curl_mh) && $this->curl_running) {
+			do {
+				$mrc = curl_multi_exec($this->curl_mh, $active);
+			} while ($mrc == CURLM_CALL_MULTI_PERFORM);
+		}
 
-				
 		// Actual list of udp sockets resourses. sctn => socket_resource.
 		$read_udp = array();
 		// When sid times out, we need to unset $read_udp_sid[$sctn][$sid]. sid => sctn
@@ -848,8 +1166,8 @@ class Sockets {
 			a little bit of time. Such alghoritm lets us to send very much packets.
 			The only limitation is memory.
 			
-			We can't select both streams and sockets at once, so we have to choose somthing
-			that will be the first. Sockets will receive much more packets than streams,
+			We can't select both streams and sockets at once, so we have to choose something
+			that will be the first. UDP sockets will receive much more packets than streams,
 			so they are more important.
 		*/
 			if (empty($this->send)) break;
@@ -871,7 +1189,6 @@ class Sockets {
 				$this->_procMarkTimedOut($responses, $read_udp, $read_udp_sctn, $read_udp_sid, $read_stream);
 				if (!$this->_procRead($start_time, $timeout, $responses, $read_udp, $read_udp_sctn, $read_udp_sid, $read_stream))
 					break;
-
 			}
 		}
 // /\ memory allocated 36943/5000=7.4 kb , 373/50=7.4 kb
@@ -879,19 +1196,19 @@ class Sockets {
 // 1.3 kb freed after closing sockets
 
 		// Mark recreated sockets
-		
 		foreach($this->recreated_stream as $sid => $r) {
 			$responses[$sid]['sr'] = true;
 		}
-		
 		foreach($this->recreated_udp as $sctn => $r) {
 			foreach($this->sockets_udp_sid[$sctn] as $sid) {
 				$responses[$sid]['sr'] = true;
 			}
 		}
 
-		// Cleanup
+		// Poll curl
+		$this->_procCurl($responses, false);
 
+		// Cleanup
 		$this->responses = array();
 		$this->send = array();
 		$this->recreated_udp = array();
@@ -899,6 +1216,15 @@ class Sockets {
 
 		return $responses;
 	}
+	
+	public function finalProcess() {
+		$responses = array();
+		// Poll curl
+		$this->_procCurl($responses, true);
+		
+		return $responses;
+	}
+	
 	
 	public function cleanUp() {
 		foreach($this->sockets_udp as $snum => &$sock) {
@@ -918,11 +1244,17 @@ class Sockets {
 		$this->sockets_udp_sid = array();
 		$this->sockets_udp_socks = array();
 		$this->sockets_stream = array();
+		$this->sockets_stream_id = array();
 		$this->sockets_stream_data = array();
 		$this->responses = array();
 		$this->send = array();	
 		$this->recreated_udp = array();
 		$this->recreated_stream = array();
+		
+		$this->curl_mh = null;
+		$this->curl_running = false;
+		$this->curl_extra = array();
+		$this->curl_id = array();
 	}
 }
 
