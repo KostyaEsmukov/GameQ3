@@ -11,9 +11,19 @@
 
 // Autoload classes
 spl_autoload_extensions(".php");
-spl_autoload_register();
 
-chdir("../"); // let autoload work
+// https://bugs.php.net/bug.php?id=51991
+if (version_compare(phpversion(), '5.3.3', '<')) {
+	spl_autoload_register(
+		function ($class) {
+			spl_autoload(str_replace('\\', DIRECTORY_SEPARATOR, ltrim($class, '\\')));
+		}
+	);
+} else {
+	spl_autoload_register();
+}
+
+chdir(dirname(__FILE__) . "/../"); // let autoload work
 
 // Define the protocols path
 $protocols_path = "./gameq3/protocols/";

@@ -1,6 +1,6 @@
 <?php
 
-chdir("../");
+chdir(dirname(__FILE__) . "/../"); // let autoload work
 require './gameq3/gameq3.php';
 
 // Define your servers,

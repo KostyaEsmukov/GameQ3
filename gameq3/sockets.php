@@ -903,7 +903,7 @@ class Sockets {
 								$cur_ping = ($recv_time - $responses[$sid]['st']);
 								//$this->log->debug("Cur ping: " . ($cur_ping*1000));
 								
-								// If ping is has changed too much, correct it
+								// If ping has changed too much, correct it
 								if ( ($cur_ping-$prev_ping > self::STREAM_PING_MAX_DIFF_MS) || ($cur_ping/$prev_ping > self::STREAM_PING_MAX_DIFF_MULTIPLY)) {
 									$responses[$sid]['pg'] = $cur_ping;
 								}
