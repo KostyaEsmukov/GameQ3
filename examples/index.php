@@ -9,12 +9,12 @@ $servers = array(
 	array(
 		'id' => 'TS3',
 		'type' => 'teamspeak3',
-		'host' => 'simhost.org',
+		'connect_host' => 'simhost.org',
 	),
 	array(
 		'id' => 'CS 1.6 server',
 		'type' => 'cs',
-		'host' => 'simhost.org:27015',
+		'connect_host' => 'simhost.org:27015',
 	)
 );
 
@@ -46,7 +46,7 @@ $results = $gq->requestAllData();
 // Some functions to print the results
 function print_results($results) {
 	foreach ($results as $id => $data) {
-		printf("<h2>%s</h2>\n", $id);
+		printf("\t\t<h2>%s</h2>\n", $id);
 		print_table($data);
 	}
 }
@@ -61,6 +61,7 @@ function print_table($data) {
 		'protocol',
 		'short_name',
 		'long_name',
+		'connect_string',
 		'online',
 		'ping_average',
 		'retry_count'
@@ -73,22 +74,23 @@ function print_table($data) {
 		'num_players',
 		'password',
 		'private_players',
+		'bot_players',
 		'map',
 		'mode',
 		'secure'
 	);
 
 	if (!$data['info']['online']) {
-		printf("<p>The server did not respond within the specified time.</p>\n");
+		echo "<p>The server did not respond within the specified time.</p>\n";
 		return;
 	}
 
-	print("<table><thead><tr><td>Group</td><td>Variable</td><td>Value</td></tr></thead><tbody>\n");
+	echo "\t\t<table>\n\t\t<thead>\n\t\t\t<tr><th>Group</th><th>Variable</th><th>Value</th></tr>\n\t\t</thead>\n\t\t<tbody>\n";
 	
 	foreach($data as $group => $datac) {
 		if ($group !== 'info' && $group !== 'general' && $group !== 'settings' && $group !== 'players') {
 			$cls = empty($cls) ? ' class="uneven"' : '';
-			printf("<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls, $group, 'Keys count', count($datac));
+			printf("\t\t\t<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls, $group, '<i>Keys count</i>', count($datac));
 			continue;
 		}
 		
@@ -117,72 +119,70 @@ function print_table($data) {
 				$val = $val['score'];
 			}
 
-			printf("<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls, $grouph, $key, var_export($val, true));
+			printf("\t\t\t<tr%s><td>%s</td><td>%s</td><td>%s</td></tr>\n", $cls, $grouph, $key, var_export($val, true));
 		}
 	}
 
-	print("</tbody></table>\n");
+	echo "\t\t</tbody>\n\t\t</table>\n";
 }
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-    <head>
-        <title>GameQ - Example script</title>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <style type="text/css">
-            * {
-                font-size: 9pt;
-                font-family: Verdana, sans-serif;
-            }
-            h1 {
-                font-size: 12pt;
-            }
-            h2 {
-                margin-top:2em;
-                font-size: 10pt;
-            }
-            table {
-                border: 1px solid #000;
-                background-color: #DDD;
-                border-spacing:1px 1px;
-            }
-            table thead {
-                font-weight: bold;
-                background-color: #CCC;
-            }
-            table tr.uneven td {
-                background-color:#FFF;
-            }
-            table td {
-                padding: 5px 8px;
-            }
-            table tbody {
-                background-color: #F9F9F9;
-            }
-            .note {
-                color: #333;
-                font-style:italic;
-            }
-            .key-always {
-                color:red;
-                font-weight:bold;
-            }
-            .key-normalise {
-                color:red;
-            }
-        </style>
-    </head>
-    <body>
-    <h1>GameQ - Example script</h1>
-    <div class="note">
-    This is a simple output example. <br/>
-    <span class="key-always">Bold, red</span> variables are always set by gameq.
-    <br/>
-    Click <a href="./list.php">here</a> for a list of supported games.
-    </div>
-<?php
-	print_results($results);
-?>
-    </body>
+	<head>
+		<title>GameQ3 - Example script</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<style type="text/css">
+			body {
+				font-size: 12px;
+				font-family: Verdana, sans-serif;
+			}
+			h1 {
+				font-size: 16px;
+				text-align: center;
+			}
+			table {
+				border: 1px solid #000;
+				border-spacing: 1px 1px;
+				background-color: #DDD;
+				margin: 0px auto;
+			}
+			table th {
+				font-weight: bold;
+				background-color: #CCC;
+			}
+			table td {
+				background-color: #F9F9F9;
+			}
+			table tr.uneven td {
+				background-color:#FFF;
+			}
+			table td, table th {
+				padding: 5px 8px;
+			}
+			h2 {
+				font-size: 13px;
+				text-align: center;
+				margin-top: 25px;
+			}
+			.note {
+				color: #333;
+				font-style: italic;
+				text-align: center;
+			}
+			.key-always {
+				color: red;
+				font-weight: bold;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>GameQ3 - Example script</h1>
+		<div class="note">
+			This is a simple output example.<br/>
+			<span class="key-always">Bold, red</span> variables are always set by GameQ3.<br/>
+			Click <a href="./list.php">here</a> for a list of supported games.
+		</div>
+<?php print_results($results); ?>
+	</body>
 </html>

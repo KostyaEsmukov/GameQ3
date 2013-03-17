@@ -23,7 +23,8 @@ class Fear extends \GameQ3\Protocols\Gamespy2 {
 	protected $name = "fear";
 	protected $name_long = "F.E.A.R.";
 
-	protected $port = 27888;
+	protected $query_port = 27888;
+	protected $ports_type = self::PT_SAME;
 	
 	protected function _put_var($key, $val) {
 		switch($key) {

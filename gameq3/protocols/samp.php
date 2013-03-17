@@ -28,7 +28,9 @@ class Samp extends \GameQ3\Protocols {
 		'rules' => "SAMP%sr",
 	);
 
-	protected $port = 7777; // Default port, used if not set when instanced
+	protected $query_port = 7777;
+	protected $ports_type = self::PT_SAME;
+	
 	protected $protocol = 'samp';
 	protected $name = 'samp';
 	protected $name_long = "San Andreas Multiplayer";
@@ -36,12 +38,12 @@ class Samp extends \GameQ3\Protocols {
 	
 	protected function construct() {
 		$tail = "";
-		$tail .= chr(strtok($this->addr, '.'));
+		$tail .= chr(strtok($this->query_addr, '.'));
 		$tail .= chr(strtok('.'));
 		$tail .= chr(strtok('.'));
 		$tail .= chr(strtok('.'));
-		$tail .= chr($this->port & 0xFF);
-		$tail .= chr($this->port >> 8 & 0xFF);
+		$tail .= chr($this->query_port & 0xFF);
+		$tail .= chr($this->query_port >> 8 & 0xFF);
 
 		foreach($this->packets as $packet_type => $packet) {
 			$this->packets[$packet_type] = sprintf($packet, $tail);

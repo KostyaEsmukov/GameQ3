@@ -30,7 +30,9 @@ class Bf3 extends \GameQ3\Protocols {
 		'players' => "\x00\x00\x00\x00\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
 	);
 
-	protected $port = 25200; // Default port, used if not set when instanced
+	protected $query_port = 25200;
+	protected $ports_type = self::PT_SAME;
+	
 	protected $protocol = 'bf3';
 	protected $name = 'bf3';
 	protected $name_long = "Battlefield 3";

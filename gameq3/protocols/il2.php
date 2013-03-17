@@ -23,8 +23,8 @@ class Il2 extends \GameQ3\Protocols\Gamespy {
 	protected $name = "il2";
 	protected $name_long = "IL-2 Sturmovik";
 
-	protected $port = 21000;
-	
+	protected $query_port = 21000;
+	protected $ports_type = self::PT_SAME;
 	
 	protected function _put_var($key, $val) {
 		switch($key) {

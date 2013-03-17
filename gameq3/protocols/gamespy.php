@@ -53,12 +53,12 @@ class Gamespy extends \GameQ3\Protocols {
 		*/
 	);
 
-	protected $port = false; // Default port, used if not set when instanced
 	protected $protocol = 'gamespy';
 	protected $name = 'gamespy';
 	protected $name_long = "Gamespy";
 	
-
+	protected $ports_type = self::PT_UNKNOWN;
+	
 	
 	public function init() {
 		$this->queue('all', 'udp', $this->packets['all']);
@@ -105,6 +105,10 @@ class Gamespy extends \GameQ3\Protocols {
 				break;
 			case 'password':
 				$this->result->addGeneral('password', $val == 1);
+				break;
+			case 'hostport':
+				$this->setConnectPort($val);
+				$this->result->addSetting($key, $val);
 				break;
 			default:
 				$this->result->addSetting($key, $val);
@@ -211,8 +215,15 @@ class Gamespy extends \GameQ3\Protocols {
 			if ($dp_pos !== false && is_numeric(substr($key, $dp_pos + 1))) {
 				$index = $this->filterInt(substr($key, $dp_pos + 1));
 				$item = substr($key, 0, $dp_pos);
-				if (!isset($players[$index])) $players[$index] = array();
-				$players[$index][$item] = $val;
+				
+				// BF1942
+				if ($item === "teamname") {
+					if (!isset($teams[$index+1])) $teams[$index+1] = array();
+					$teams[$index+1]['team'] = $val;
+				} else {
+					if (!isset($players[$index])) $players[$index] = array();
+					$players[$index][$item] = $val;
+				}
 			} else {
 				$this->_put_var($key, $val);
 			}
@@ -221,15 +232,7 @@ class Gamespy extends \GameQ3\Protocols {
 		if (!empty($players)) {
 			// Remember fields of the first player
 			$fields = array_keys(reset($players));
-			$fields_extra = array();
-			// BF2 specifies teamname for first players only
-			$tn_pos = array_search('teamname', $fields, true);
-			if ($tn_pos !== false) {
-				$fields_extra [] = 'teamname';
-				unset($fields[$tn_pos]);
-			}
 			$fields_cnt = count($fields);
-			$fields_extra_cnt = count($fields_extra);
 			
 			$player_key = false;
 			
@@ -246,7 +249,7 @@ class Gamespy extends \GameQ3\Protocols {
 			}
 			
 			foreach($players as $more) {
-				if (count($more) !== $fields_cnt && count($more) !== ($fields_cnt + $fields_extra_cnt)) {
+				if (count($more) !== $fields_cnt) {
 					$this->debug("Invalid player, skipped");
 					$full = false;
 					continue;
@@ -265,15 +268,8 @@ class Gamespy extends \GameQ3\Protocols {
 				$name = iconv("ISO-8859-1//IGNORE", "utf-8", $more[$player_key]); // some chars like (c) should be converted to utf8
 				$score = isset($more['score']) ? $more['score'] : (isset($more['frags']) ? $more['frags'] : null);
 				$teamid = isset($more['team']) ? $more['team'] : null;
-				
-				// Bf2
-				if (isset($more['team']) && isset($more['teamname'])) {
-					if (!isset($teams[$more['team']])) {
-						$teams[$more['team']] = array();
-						$teams[$more['team']]['team'] = $more['teamname'];
-					}
-				}
-				unset($more[$player_key], $more['score'], $more['frags'], $more['team'], $more['teamname']);
+
+				unset($more[$player_key], $more['score'], $more['frags'], $more['team']);
 				
 				$this->result->addPlayer($name, $score, $teamid, $more);
 			}
@@ -282,7 +278,7 @@ class Gamespy extends \GameQ3\Protocols {
 		if ($full) {
 			$players_cnt = count($players);
 			
-			// BF2
+			// BF1942
 			if ($players_cnt > $this->result->getGeneral('num_players')) {
 				$this->result->addGeneral('num_players', $players_cnt);
 			} else

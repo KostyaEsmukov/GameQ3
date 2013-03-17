@@ -22,6 +22,4 @@ namespace GameQ3\protocols;
 class Dayz extends \GameQ3\Protocols\Arma2 {
 	protected $name = "dayz";
 	protected $name_long = "DayZ Mod";
-
-	protected $port = 2302;
 }

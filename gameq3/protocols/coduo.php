@@ -24,5 +24,6 @@ class Coduo extends \GameQ3\Protocols\Quake3 {
 	protected $name = "coduo";
 	protected $name_long = "Call of Duty: United Offensive";
 
-	protected $port = 28960;
+	protected $query_port = 28960;
+	protected $ports_type = self::PT_SAME;
 }

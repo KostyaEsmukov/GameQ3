@@ -26,7 +26,9 @@ class Quake3 extends \GameQ3\Protocols {
 		'status' => "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x0A",
 	);
 
-	protected $port = 27960; // Default port, used if not set when instanced
+	protected $query_port = 27960;
+	protected $ports_type = self::PT_SAME;
+	
 	protected $protocol = 'quake3';
 	protected $name = 'quake3';
 	protected $name_long = "Quake 3";

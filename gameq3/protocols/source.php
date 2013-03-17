@@ -29,10 +29,14 @@ class Source extends \GameQ3\Protocols {
 		'rules' => "\xFF\xFF\xFF\xFF\x56%s",
 	);
 
-	protected $port = 27015; // Default port, used if not set when instanced
+	protected $query_port = 27015;
+	protected $ports_type = self::PT_SAME;
+	
 	protected $protocol = 'source';
 	protected $name = 'source';
 	protected $name_long = "Source Server";
+	
+	protected $connect_string = 'steam://connect/{IP}:{PORT}';
 	
 	protected $source_engine = true;
 	

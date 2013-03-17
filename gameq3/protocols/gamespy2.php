@@ -27,11 +27,11 @@ class Gamespy2 extends \GameQ3\Protocols {
 		'players' => "\xFE\xFD\x00\x43\x4F\x52\x59\x00\xFF\xFF",
 	);
 
-	protected $port = false; // Default port, used if not set when instanced
 	protected $protocol = 'gamespy2';
 	protected $name = 'gamespy2';
 	protected $name_long = "Gamespy2";
 	
+	protected $ports_type = self::PT_UNKNOWN;
 
 	
 	public function init() {

@@ -9,17 +9,17 @@ $servers = array(
 	array(
 		'id' => 'Minecraft',
 		'type' => 'minecraft',
-		'host' => 'simhost.org',
+		'connect_host' => 'simhost.org',
 	),
 	array(
 		'id' => 'CS 1.6',
 		'type' => 'cs',
-		'host' => 'simhost.org:27015',
+		'connect_host' => 'simhost.org:27015',
 	),
 	array(
 		'id' => 'L4D',
 		'type' => 'left4dead',
-		'host' => 'simhost.org:27009',
+		'connect_host' => 'simhost.org:27009',
 	),
 );
 

@@ -26,11 +26,11 @@ Simple usage example:
         $gq->addServer(array(
             'id' => 'cs',
             'type' => 'cs',
-            'host' => 'simhost.org:27015'
+            'connect_host' => 'simhost.org:27015'
         ));
     }
-    catch(Exception $e) {
-        die($e->getMessage());
+    catch(GameQ3\UserException $e) {
+        die("addServer exception: " . $e->getMessage());
     }
 
     $results = $gq->requestAllData();

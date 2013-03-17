@@ -31,13 +31,13 @@ class Lfs extends \GameQ3\Protocols {
 	protected $network = false;
 	
 	protected $url = "/hoststatus/?h=%s";
-	protected $addr = "www.lfsworld.net";
-	protected $port = 80;
-	
+	protected $query_addr = "www.lfsworld.net";
+	protected $query_port = 80;
+
 	
 	protected function construct() {
 		if (!isset($this->server_info['hostname']))
-			throw new \GameQ3\GameQException("Hostname must be set for lfs protocol");
+			throw new \GameQ3\UserException("Hostname must be set for lfs protocol");
 			
 		$this->url = sprintf($this->url, urlencode($this->server_info['hostname']));
 	}

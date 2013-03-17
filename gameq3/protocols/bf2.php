@@ -23,7 +23,9 @@ class Bf2 extends \GameQ3\Protocols\Gamespy3 {
 	protected $name = "bf2";
 	protected $name_long = "Battlefield 2";
 
-	protected $port = 29900;
+	protected $query_port = 29900;
+	protected $connect_port = 16567;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	protected $packets = array(
 		'all' => "\xFE\xFD\x00\x10\x20\x30\x40\xFF\xFF\xFF\x01",
@@ -61,6 +63,10 @@ class Bf2 extends \GameQ3\Protocols\Gamespy3 {
 				break;
 			case 'bf2_anticheat':
 				$this->result->addGeneral('secure', $val == 1);
+				$this->result->addSetting($key, $val);
+				break;
+			case 'hostport':
+				$this->setConnectPort($val);
 				$this->result->addSetting($key, $val);
 				break;
 			default:

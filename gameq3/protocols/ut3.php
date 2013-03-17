@@ -34,7 +34,9 @@ class Ut3 extends \GameQ3\Protocols\Gamespy3 {
 	protected $name = "ut3";
 	protected $name_long = "Unreal Tournament 3";
 
-	protected $port = 6500;
+	protected $query_port = 6500;
+	protected $connect_port = 7777;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	protected function _parse_arrays_break(&$buf) {
 		/*
@@ -119,6 +121,10 @@ class Ut3 extends \GameQ3\Protocols\Gamespy3 {
 					$this->result->addGeneral('hostname', $val);
 				break;
 				
+			case 'hostport':
+				$this->setConnectPort($val);
+				$this->result->addSetting($key, $val);
+				break;
 			case 'p1073741825':
 				$this->result->addGeneral('map', $val);
 				break;

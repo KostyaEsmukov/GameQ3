@@ -87,10 +87,10 @@ class Sockets {
 	public function setVar($key, $val) {
 		if ($key == 'curl_options') {
 			if (!is_array($value))
-				throw new GameQException("Value for setVar must be an array. Got value: " . var_export($value, true));
+				throw new UserException("Value for setVar must be an array. Got value: " . var_export($value, true));
 		} else {		
 			if (!is_int($value))
-				throw new GameQException("Value for setVar must be an integer. Got value: " . var_export($value, true));
+				throw new UserException("Value for setVar must be an integer. Got value: " . var_export($value, true));
 		}
 			
 		switch($key) {
@@ -116,77 +116,10 @@ class Sockets {
 				break;
 			
 			default:
-				throw new GameQException("Unknown key in setSockOption: " . var_export($key, true));
+				throw new UserException("Unknown key in setSockOption: " . var_export($key, true));
 		}
 	}
-	
-	// Parse 'Addr:port' string
-	private static function _parseHost($host) {
-		$colonpos = strrpos($host, ':');
-		if ($colonpos === false) {
-			$server_addr = $host;
-			$server_port = false;
-		} else {
-			$server_port = substr($host, $colonpos+1);
-			if (!is_numeric($server_port)) {
-				$server_addr = $host;
-				$server_port = false;
-			} else {
-				$server_addr = substr($host, 0, $colonpos);
-				$server_port = intval($server_port);
-			}
-		}
-		
-		return array($server_addr, $server_port);
-	}
-	
-	// Parse server_info array and extract addresses
-	public static function fillQueryConnectHosts($server_info) {
-		// Check for server host
-		if (empty($server_info['host']) && empty($server_info['addr'])) {
-			throw new SocketsConfigException("Missing server info keys 'host' and 'addr'");
-		}
-		
-		
-		if (isset($server_info['addr'])) {
-			$server_addr = $server_info['addr'];
-			$server_port = (isset($server_info['port']) ? intval($server_info['port']) : false);
-		} else {
-			// Split addr and port
-			list($server_addr, $server_port) = self::_parseHost($server_info['host']);
-		}
-		
-		$connect_addr = $server_addr;
-		$connect_port = $server_port;
-		
-		
-		if (isset($server_info['connect_addr'])) {
-			$connect_addr = $server_info['connect_addr'];
-			if (isset($server_info['connect_port']))
-				$connect_port = intval($server_info['connect_port']);
-		} else if (isset($server_info['connect_host'])) {
-			// Split addr and port
-			list($connect_addr, $connect_port) = self::_parseHost($server_info['connect_host']);
-		}
-		
 
-		if ($server_addr{0} == '[' && $server_addr{strlen($server_addr)-1} == ']') {
-			if (!filter_var(substr($server_addr, 1, -1), FILTER_VALIDATE_IP, FILTER_FLAG_IPV6))
-				throw new SocketsConfigException("Wrong address (IPv6 filter failed): " . $server_addr);
-		} else {
-			if (!filter_var($server_addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4))
-				if (!preg_match('/^[a-zA-Z0-9._-]{1,255}$/', $server_addr))
-					throw new SocketsConfigException("Wrong address (IPv4 and hostname filters failed): " . $server_addr);
-		}
-		
-		return array(
-			$server_addr,
-			$server_port,
-			$connect_addr,
-			$connect_port
-		);
-	}
-	
 	// Resolve address
 	private function _resolveAddr($addr) {
 		if (isset($this->cache_addr[$addr])) {
@@ -197,7 +130,7 @@ class Sockets {
 		if ($addr{0} == '[' && $addr{strlen($addr)-1} == ']') {
 			$t = substr($addr, 1, -1);
 			if (!filter_var($t, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-				throw new SocketsConfigException("Wrong address (IPv6 filter failed) '" . $addr . "'");
+				throw new SocketsException("Wrong address (IPv6 filter failed) '" . $addr . "'");
 			}
 			$this->cache_addr[$addr] = array(AF_INET6, $t);
 			return $this->cache_addr[$addr];
@@ -448,22 +381,22 @@ class Sockets {
 	// Push request queue into class instance and prepare sockets
 	public function allocateSocket($server_id, $queue_id, $queue_opts) {
 		if (empty($queue_opts['transport']))
-			throw new SocketsConfigException("Missing 'transport' key in allocateSocket() function");
+			throw new SocketsException("Missing 'transport' key in allocateSocket() function");
 		if (empty($queue_opts['packets']))
-			throw new SocketsConfigException("Missing 'packets' key in allocateSocket() function");
+			throw new SocketsException("Missing 'packets' key in allocateSocket() function");
 			
 		$proto = $queue_opts['transport'];
 		$packs = $queue_opts['packets'];
 
 		if ($proto === 'udp' || $proto === 'tcp' || $proto === 'http') {
 			if (empty($queue_opts['addr']) || !is_string($queue_opts['addr']))
-				throw new SocketsConfigException("Missing valid 'addr' key in allocateSocket() function");
+				throw new SocketsException("Missing valid 'addr' key in allocateSocket() function");
 			if (empty($queue_opts['port']) || !is_int($queue_opts['port']))
-				throw new SocketsConfigException("Missing valid 'port' key in allocateSocket() function");
+				throw new SocketsException("Missing valid 'port' key in allocateSocket() function");
 			
 			if ($proto === 'http') {
 				if (!is_string($packs))
-					throw new SocketsConfigException("Packets key for HTTP protocol must be a string in allocateSocket() function");
+					throw new SocketsException("Packets key for HTTP protocol must be a string in allocateSocket() function");
 				$data = $queue_opts['addr'];
 			} else {
 				// some domains may have multiple ip addreses. to avoid different addreses, resolved from one domain, we going to use resolved IPs in sid
@@ -474,14 +407,14 @@ class Sockets {
 		} else
 		if ($proto === 'unix' || $proto === 'udg') {
 			if (empty($queue_opts['path']) || !is_int($queue_opts['path']))
-				throw new SocketsConfigException("Missing valid 'path' key in allocateSocket() function");
+				throw new SocketsException("Missing valid 'path' key in allocateSocket() function");
 				
 			$domain = false;
 			$domain_str = 'u';
 			$data = $queue_opts['path'];
 			$port = false;
 		} else {
-			throw new SocketsConfigException("Unknown protocol '" . $proto . "'");
+			throw new SocketsException("Unknown protocol '" . $proto . "'");
 		}
 		
 			
@@ -1258,5 +1191,5 @@ class Sockets {
 	}
 }
 
-class SocketsConfigException extends \Exception {} // Various configuration errors
-class SocketsException extends \Exception {} // Various socket errors
+class SocketsUserException extends \Exception {} // Various configuration errors
+class SocketsException extends \Exception {}

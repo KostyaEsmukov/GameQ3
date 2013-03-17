@@ -54,10 +54,12 @@ class Gamespy3 extends \GameQ3\Protocols {
 		*/
 	);
 
-	protected $port = false; // Default port, used if not set when instanced
+	
 	protected $protocol = 'gamespy3';
 	protected $name = 'gamespy3';
 	protected $name_long = "Gamespy3";
+	
+	protected $ports_type = self::PT_UNKNOWN;
 	
 	protected $challenge = true;
 	protected $stage = null;
@@ -176,6 +178,10 @@ class Gamespy3 extends \GameQ3\Protocols {
 				break;
 			case 'password':
 				$this->result->addGeneral('password', $val == 1);
+				break;
+			case 'hostport':
+				$this->setConnectPort($val);
+				$this->result->addSetting($key, $val);
 				break;
 			default:
 				$this->result->addSetting($key, $val);

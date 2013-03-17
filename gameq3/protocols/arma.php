@@ -23,9 +23,10 @@ class Arma extends \GameQ3\Protocols\Gamespy2 {
 	protected $name = "arma";
 	protected $name_long = "Armed Assault";
 
-	protected $port = 2302;
+	protected $query_port = 2302;
+	protected $ports_type = self::PT_SAME;
 	
-	/// TODO: teamid are strings. fix it.
+	/// TODO: teamids are not teams at all. It is something like rank. Find this out.
 
 	protected function _put_var($key, $val) {
 		switch($key) {

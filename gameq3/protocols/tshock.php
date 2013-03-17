@@ -25,7 +25,9 @@ class Tshock extends \GameQ3\Protocols {
 	protected $name = 'terraria';
 	protected $name_long = "Terraria";
 	
-	protected $port = 7878; // Default port, used if not set when instanced
+	protected $query_port = 7878;
+	protected $connect_port = 7777;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	protected $url = "/v2/server/status?players=true&rules=true";
 	
@@ -47,8 +49,11 @@ class Tshock extends \GameQ3\Protocols {
 			$this->debug("Tshock error (" . $data['status'] . ")" . (isset($data['error']) ? " " . $data['error'] : ""));
 			return false;
 		}
-		
 		unset($data['status']);
+		
+		if (!isset($data['port'])) return false;
+		$this->setConnectPort($data['port']);
+		unset($data['port']);
 		
 		$keys_general = array(
 			"name" => "hostname",

@@ -28,7 +28,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		'players' => "\x79\x00\x00\x00\x02",
 	);
 
-	protected $port = 7778; // Default port, used if not set when instanced
+	protected $ports_type = self::PT_UNKNOWN;
 	protected $protocol = 'unreal2';
 	protected $name = 'unreal2';
 	protected $name_long = "Unreal 2 Engine";
@@ -147,7 +147,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		// serverip
 		$buf->readPascalString(1);
 		// gameport
-		$buf->readInt32();
+		$this->setConnectPort($buf->readInt32());
 		// queryport
 		$buf->readInt32();
 		

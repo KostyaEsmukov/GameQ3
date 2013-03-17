@@ -24,5 +24,6 @@ class Cod extends \GameQ3\Protocols\Quake3 {
 	protected $name = "cod";
 	protected $name_long = "Call of Duty";
 
-	protected $port = 28960;
+	protected $query_port = 28960;
+	protected $ports_type = self::PT_SAME;
 }

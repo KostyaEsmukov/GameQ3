@@ -23,7 +23,8 @@ class Arma2 extends \GameQ3\Protocols\Gamespy3 {
 	protected $name = "arma2";
 	protected $name_long = "Armed Assault 2";
 
-	protected $port = 2302;
+	protected $query_port = 2302;
+	protected $ports_type = self::PT_SAME;
 	
 	protected function _put_var($key, $val) {
 		switch($key) {

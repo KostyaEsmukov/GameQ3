@@ -23,7 +23,9 @@ class Bf1942 extends \GameQ3\Protocols\Gamespy {
 	protected $name = "bf1942";
 	protected $name_long = "Battlefield 1942";
 
-	protected $port = 23000;
+	protected $query_port = 23000;
+	protected $connect_port = 14567;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	
 	protected function _put_var($key, $val) {
@@ -65,6 +67,10 @@ class Bf1942 extends \GameQ3\Protocols\Gamespy {
 			case 'tickets2':
 				$this->teams[2] = array();
 				$this->teams[2]['tickets'] = $val;
+				$this->result->addSetting($key, $val);
+				break;
+			case 'hostport':
+				$this->setConnectPort($val);
 				$this->result->addSetting($key, $val);
 				break;
 			default:

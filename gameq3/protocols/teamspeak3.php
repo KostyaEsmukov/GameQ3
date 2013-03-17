@@ -40,8 +40,10 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		//'quit' => "quit\x0A",
 	);
 
-	protected $port = 9987; // Default port, used if not set when instanced
+	protected $connect_port = 9987;
 	protected $query_port = 10011;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_FIXED;
+	
 	protected $protocol = 'teamspeak3';
 	protected $name = 'teamspeak3';
 	protected $name_long = "Teamspeak 3";
@@ -79,10 +81,6 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	protected function construct() {
 		// Make packet that we will send every time
 		
-		if (isset($this->server_info['query_port']) && is_int($this->server_info['query_port']))
-			$this->query_port = $this->server_info['query_port'];
-		
-		
 		$formed_packet = "";
 		$reply_format = array();
 		
@@ -95,7 +93,9 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		if (isset($this->server_info['sid'])) {
 			$formed_packet .= sprintf($this->packets['usesid'], $this->server_info['sid']);
 		} else {
-			$formed_packet .= sprintf($this->packets['useport'], $this->port);
+			if (!is_int($this->connect_port))
+				throw new UserException("Both connect_port and sid are missed in TS3");
+			$formed_packet .= sprintf($this->packets['useport'], $this->connect_port);
 		}
 		$reply_format []= 'cmd';
 		
@@ -122,7 +122,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	}
 	
 	public function init() {
-		$this->queue('all', 'tcp', $this->packet, array('port' => $this->query_port) );
+		$this->queue('all', 'tcp', $this->packet);
 	}
 	
 	protected function processRequests($qid, $requests) {
@@ -201,6 +201,9 @@ class Teamspeak3 extends \GameQ3\Protocols {
 							break;
 						case 'virtualserver_version':
 							$this->result->addGeneral('version', $val);
+							break;
+						case 'virtualserver_port':
+							$this->setConnectPort($val);
 							break;
 					}
 					$this->result->addSetting($key, $val);

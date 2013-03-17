@@ -26,6 +26,7 @@ class Log {
 	const ERROR = 4; //0b0100;
 	
 	const TRACE_LIMIT = 4;
+	const TRACE_IGNORE = 2;
 	const FORCE_TRACE_LIMIT = 1;
 	
 	private $loglevel = 4; //0b0100;
@@ -46,7 +47,7 @@ class Log {
 	private function _log($reason, $str) {
 		$this->_logger('GameQ3 [' . $reason . '] ' . $str);
 	}
-	
+
 	private function _backtrace($force, $trace_skip) {
 		if (!$this->trace && !$force) return;
 		
@@ -56,7 +57,7 @@ class Log {
 		// http://php.net/manual/ru/function.debug-backtrace.php
 		$php_version = phpversion();
 		if (version_compare(($php_version), '5.4.0', '>=')) {
-			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($trace_limit+$trace_skip+1));
+			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($trace_limit + $trace_skip + self::TRACE_IGNORE));
 		} else
 		if (version_compare(($php_version), '5.3.6', '>=')) {
 			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
@@ -64,37 +65,42 @@ class Log {
 			$trace = debug_backtrace(false);
 		}
 		
-		unset($trace[0]);
-		
 		$i = 0;
 		$result = "Trace:\n";
 		
 		foreach($trace as $v) {
 			$i++;
-			if ($i <= $trace_skip) {
+			if ($i <= ($trace_skip + self::TRACE_IGNORE)) {
 				continue;
 			}
-			$result .= '#' . str_pad($i, 2) . ' ' . (isset($v['class']) ? $v['class'] . '->' : '') . $v['function'] . '() called at [' . $v['file'] . ':' . $v['line'] . ']' . "\n";
+			$result .= '#' . str_pad(($i - $trace_skip - self::TRACE_IGNORE - 1), 2) . ' ' . (isset($v['class']) ? $v['class'] . '->' : '') . $v['function'] . '() called at [' . $v['file'] . ':' . $v['line'] . ']' . "\n";
 
-			if ($i >= ($trace_limit+$trace_skip)) break;
+			if ($i >= ($trace_limit + $trace_skip + self::TRACE_IGNORE)) break;
 		}
 		
 		$this->_logger($result);
 	}
 	
-	public function debug($str, $force_trace = false, $trace_skip = 0) {
-		if (!($this->loglevel & self::DEBUG)) return;
-		$this->_log('Debug', $str);
+	private function _eToStr(&$e) {
+		if (!is_object($e)) return;
+		if (!($e instanceof \Exception)) return;
+		$e = "'" . get_class($e) . "' exception with message: " . $e->getMessage();
+	}
+	
+	private function _message($type, $reason, $str, $force_trace, $trace_skip) {
+		if (!($this->loglevel & $type)) return;
+		$this->_eToStr($str);
+		$this->_log($reason, $str);
 		$this->_backtrace($force_trace, $trace_skip);
+	}
+	
+	public function debug($str, $force_trace = false, $trace_skip = 0) {
+		$this->_message(self::DEBUG, 'Debug', $str, $force_trace, $trace_skip);
 	}
 	public function warning($str, $force_trace = false, $trace_skip = 0) {
-		if (!($this->loglevel & self::WARNING)) return;
-		$this->_log('Warning', $str);
-		$this->_backtrace($force_trace, $trace_skip);
+		$this->_message(self::WARNING, 'Warning', $str, $force_trace, $trace_skip);
 	}
 	public function error($str, $force_trace = false, $trace_skip = 0) {
-		if (!($this->loglevel & self::ERROR)) return;
-		$this->_log('Error', $str);
-		$this->_backtrace($force_trace, $trace_skip);
+		$this->_message(self::ERROR, 'Error', $str, $force_trace, $trace_skip);
 	}
 }

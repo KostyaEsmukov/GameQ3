@@ -27,7 +27,9 @@ class Minecraft extends \GameQ3\Protocols {
 		'status' => "\xFE\x01",
 	);
 
-	protected $port = 25565; // Default port, used if not set when instanced
+	protected $query_port = 25565;
+	protected $ports_type = self::PT_SAME;
+	
 	protected $protocol = 'minecraft';
 	protected $name = 'minecraft';
 	protected $name_long = "Minecraft";

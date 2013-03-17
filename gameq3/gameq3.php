@@ -72,7 +72,7 @@ class GameQ3 {
 
 	public function setOption($key, $value) {
 		if (!is_int($value))
-			throw new GameQException("Value for setOption must be int. Got value: " . var_export($value, true));
+			throw new UserException("Value for setOption must be int. Got value: " . var_export($value, true));
 
 		switch($key) {
 			case 'servers_count': $this->servers_count = $value; break;
@@ -84,7 +84,7 @@ class GameQ3 {
 	
 	public function setFilter($name, $args = array()) {
 		if (!is_array($args))
-			throw new GameQException("Args must be an array in setFilter (name '" . $name . "')");
+			throw new UserException("Args must be an array in setFilter (name '" . $name . "')");
 
 		$this->filters[$name] = $args;
 	}
@@ -96,38 +96,19 @@ class GameQ3 {
 	/**
 	 * Add a server to be queried
 	 *
-	 * Example:
-	 * $this->addServer(array(
-	 * 		// Required keys
-	 * 		'id' => 'someServerId',
-	 * 		'type' => 'cs',
-	 * 		'host' => '127.0.0.1:27015', ('127.0.0.1' or 'somehost.com:27015' or '[::1]' or '[::1]:27015')
-	 * 			Port not required, but will use the default port in the class which may not be correct for the
-	 * 			specific server being queried.
-	 *		'addr' => '127.0.0.1', ('127.0.0.1' or 'somehost.com' or '[::1]') If defined, 'host' skipped and this pair used instead
-	 *		'port' => 27015, // should be integer. If ommited or false, default protocol port used instead
-	 *
-	 * 		// Optional keys
-	 * 		'options' => array('debug' => true), // Protocol-specific options
-	 *		'filters' => array('stripcolors' => true), // true to force enable, false to force disable filter
-	 *		// any other protocol-required option
-	 * ));
-	 *
 	 * @param array $server_info
-	 * @throws \GameQ3\GameQException
-	 * @throws \GameQ3\SocketsConfigException
-	 * @throws \GameQ3\SocketsException
+	 * @throws \GameQ3\UserException
 	 */
 	public function addServer($server_info) {
 		if (!is_array($server_info))
-			throw new GameQException("Server_info must be an array");
+			throw new UserException("Server_info must be an array");
 			
 		if (!isset($server_info['type']) || !is_string($server_info['type'])) {
-			throw new GameQException("Missing server info key 'type'");
+			throw new UserException("Missing server info key 'type'");
 		}
 
 		if (!isset($server_info['id']) || (!is_string($server_info['id']) && !is_numeric($server_info['id']))) {
-			throw new GameQException("Missing server info key 'id'");
+			throw new UserException("Missing server info key 'id'");
 		}
 		
 		// already added
@@ -136,15 +117,17 @@ class GameQ3 {
 
 		if (!empty($server_info['filters'])) {
 			if (!is_array($server_info['filters']))
-				throw new GameQException("Server info key 'filters' must be an array");
+				throw new UserException("Server info key 'filters' must be an array");
 				
 			$this->servers_filters[ $server_info['id'] ] = array();
 			// check filters array
 			foreach($server_info['filters'] as $filter => &$args) {
 				if ($args !== false && !is_array($args))
-					throw new GameQException("Filter arguments must be an array or boolean false");
+					throw new UserException("Filter arguments must be an array or boolean false");
 				$this->servers_filters[ $server_info['id'] ][ $filter ] = $args;
 			}
+			
+			unset($server_info['filters']);
 		}
 
 		$protocol_class = "\\GameQ3\\Protocols\\".ucfirst($server_info['type']);
@@ -153,7 +136,7 @@ class GameQ3 {
 			$this->servers[ $server_info['id'] ] = new $protocol_class($server_info, $this->log);
 		}
 		catch(\LogicException $e) { // Class not found
-			throw new GameQException($e->getMessage());
+			throw new UserException($e->getMessage());
 		}
 	}
 	
@@ -207,7 +190,7 @@ class GameQ3 {
 				call_user_func_array($filt . "::filter", array( &$result, $args ));
 			}
 			catch(\Exception $e) {
-				$this->log->warning($e->getMessage());
+				$this->log->warning($e);
 			}
 		}
 		
@@ -221,7 +204,7 @@ class GameQ3 {
 				call_user_func_array($filt . "::filter", array( &$result, $args ));
 			}
 			catch(\Exception $e) {
-				$this->log->warning($e->getMessage());
+				$this->log->warning($e);
 			}
 		}
 	}
@@ -231,7 +214,12 @@ class GameQ3 {
 			$this->started = true;
 // \/
 			foreach($this->servers as &$instance) {
-				$instance->protocolInit();
+				try {
+					$instance->protocolInit();
+				}
+				catch (\Exception $e) {
+					$this->log->warning($e);
+				}
 			}
 // /\ memory allocated 14649/5000=3 kb, 152/50=3 kb
 
@@ -284,8 +272,11 @@ class GameQ3 {
 						);
 					}
 				}
-				catch (\Exception $e) {
-					$this->log->warning($e->getMessage());
+				catch (SocketsException $e) { // not resolvable hostname, etc
+					$this->log->debug($e);
+				}
+				catch (\Exception $e) { // wrong input data
+					$this->log->warning($e);
 				}
 			}
 			
@@ -312,7 +303,7 @@ class GameQ3 {
 					);
 				}
 				catch(\Exception $e) {
-					$this->log->debug($e->getMessage());
+					$this->log->debug($e);
 				}
 				unset($response[$sid]);
 				unset($process[$sid]);
@@ -323,7 +314,12 @@ class GameQ3 {
 		
 		$result = array();
 		foreach($servers_queried as $key => &$instance) {
-			$instance->startPreFetch();
+			try {
+				$instance->startPreFetch();
+			}
+			catch(\Exception $e) {
+				$this->log->debug($e);
+			}
 			$result[$key] = $instance->resultFetch();
 			$this->_applyFilters($key, $result[$key]);
 		}
@@ -332,4 +328,4 @@ class GameQ3 {
 	}
 }
 
-class GameQException extends \Exception {} // Configuration, environment errors
+class UserException extends \Exception {}

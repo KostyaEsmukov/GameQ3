@@ -23,7 +23,9 @@ class Bfv extends \GameQ3\Protocols\Gamespy2 {
 	protected $name = "bfv";
 	protected $name_long = "Battlefield Vietnam";
 
-	protected $port = 23000;
+	protected $query_port = 23000;
+	protected $connect_port = 14567;
+	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	protected function _put_var($key, $val) {
 		switch($key) {
@@ -54,6 +56,10 @@ class Bfv extends \GameQ3\Protocols\Gamespy2 {
 				break;
 			case 'sv_punkbuster':
 				$this->result->addGeneral('secure', $val == 1);
+				break;
+			case 'hostport':
+				$this->setConnectPort($val);
+				$this->result->addSetting($key, $val);
 				break;
 			default:
 				$this->result->addSetting($key, $val);
