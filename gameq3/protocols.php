@@ -29,7 +29,7 @@ abstract class Protocols {
 	const PT_DIFFERENT_COMPUTABLE = 2; // It is possible to compute second port if we have first
 	const PT_DIFFERENT_NONCOMPUTABLE_FIXED = 3; // Query port is the same for few connect_ports
 	const PT_DIFFERENT_NONCOMPUTABLE_VARIABLE = 4; // Both ports are set by server admin in config files, so it is impossible to compute them. But servers return connect_port.
-	const PT_CUSTOM = 5; // It is possible to compute ports using custom function fixPorts, which must be overloaded in protocol using this PT.
+	const PT_CUSTOM = 5; // It is possible to compute ports using custom function fixPorts, which must be overloaded in protocols using this PT.
 	const PT_UNKNOWN = 6; // PT is unknown. Both ports must be set.
 	
 	protected $query_addr;
@@ -243,14 +243,6 @@ abstract class Protocols {
 		}
 	}
 	
-	final protected function setConnectPort($port) {
-		$port = $this->filterPort($port);
-		if (!is_int($port)) return;
-		if (is_int($this->connect_port) && $this->connect_port !== $port) {
-			$this->debug("Defined connect port '" . $this->connect_port ."' is not equal to received from the server one '" . $port . "'. Using port provided by server");
-		}
-		$this->connect_port = $port;
-	}
 	
 	final protected function debug($str) {
 		$str = '{' . $this->protocol . '} ' . $str;
@@ -265,6 +257,40 @@ abstract class Protocols {
 		$this->log->error($str, true, 1);
 	}
 	
+	
+	final protected function setConnectPort($port) {
+		$port = $this->filterPort($port);
+		if (!is_int($port)) return;
+		if (is_int($this->connect_port) && $this->connect_port !== $port) {
+			$this->debug("Defined connect port '" . $this->connect_port ."' is not equal to received from the server one '" . $port . "'. Using port provided by server");
+		}
+		$this->connect_port = $port;
+	}
+	
+	final protected function getConnectString() {
+		if (!is_string($this->connect_string)) return false;
+		return $this->genConnectString();
+	}
+	
+	protected function genConnectString() {
+		if (!is_int($this->connect_port)) return false;
+		return str_replace(array('{IP}', '{PORT}'), array($this->connect_addr, $this->connect_port), $this->connect_string);
+	}
+
+	
+	protected function filterInt($var) {
+		if (is_string($var)) {
+			if (ctype_digit($var)) {
+				$i = intval($var);
+				return ($i == $var ? $i : $var); // overflow check
+			}
+			//if (preg_match('/^[-]?[0-9.]+$/', $var))
+			//	return floatval($var);
+		}
+		return $var;
+	}
+
+
 	final protected function isRequested($s) {
 		return (!isset($this->unst[$s]));
 	}
@@ -285,17 +311,31 @@ abstract class Protocols {
 		unset($this->queue_check[$name]);
 	}
 	
-	protected function filterInt($var) {
-		if (is_string($var)) {
-			if (ctype_digit($var)) {
-				$i = intval($var);
-				return ($i == $var ? $i : $var); // overflow check
-			}
-			//if (preg_match('/^[-]?[0-9.]+$/', $var))
-			//	return floatval($var);
-		}
-		return $var;
+	final public function popRequests() {
+		$q = &$this->queue;
+		unset($this->queue);
+		$this->queue = array();
+		return $q;
 	}
+	
+	final protected function queue($name, $transport, $packets, $more = array() ) {
+		$this->queue_check[$name] = true;
+		
+		$this->queue[$name] = array(
+			'addr' => $this->query_addr,
+			'port' => $this->query_port,
+			'transport' => $transport,
+			'packets' => $packets,
+		);
+		
+		foreach($more as $key => $val) {
+			if ($key == 'nocheck')
+				$this->unCheck($name);
+			else
+				$this->queue[$name][$key] = $val;
+		}
+	}
+	
 
 	final public function protocolInit() {
 		$this->ping_sum = 0;
@@ -370,40 +410,6 @@ abstract class Protocols {
 		return;
 	}
 	
-	final public function popRequests() {
-		$q = &$this->queue;
-		unset($this->queue);
-		$this->queue = array();
-		return $q;
-	}
-	
-	protected function queue($name, $transport, $packets, $more = array() ) {
-		$this->queue_check[$name] = true;
-		
-		$this->queue[$name] = array(
-			'addr' => $this->query_addr,
-			'port' => $this->query_port,
-			'transport' => $transport,
-			'packets' => $packets,
-		);
-		
-		foreach($more as $key => $val) {
-			if ($key == 'nocheck')
-				$this->unCheck($name);
-			else
-				$this->queue[$name][$key] = $val;
-		}
-	}
-	
-	final protected function getConnectString() {
-		if (!is_string($this->connect_string)) return false;
-		return $this->genConnectString();
-	}
-	
-	protected function genConnectString() {
-		if (!is_int($this->connect_port)) return false;
-		return str_replace(array('{IP}', '{PORT}'), array($this->connect_addr, $this->connect_port), $this->connect_string);
-	}
 
 	final public function resultFetch() {
 		$important_keys = array('num_players', 'max_players', 'hostname');

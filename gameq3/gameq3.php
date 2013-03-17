@@ -133,9 +133,11 @@ class GameQ3 {
 		$protocol_class = "\\GameQ3\\Protocols\\".ucfirst($server_info['type']);
 
 		try {
+			if (!class_exists($protocol_class, true)) // PHP 5.3
+				throw new UserException("Class " . $protocol_class . " could not be loaded");
 			$this->servers[ $server_info['id'] ] = new $protocol_class($server_info, $this->log);
 		}
-		catch(\LogicException $e) { // Class not found
+		catch(\LogicException $e) { // Class not found PHP 5.4
 			throw new UserException($e->getMessage());
 		}
 	}
