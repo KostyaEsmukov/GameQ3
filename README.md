@@ -11,7 +11,7 @@ The main differences from previous versions of GameQ are queue style of packets 
 Requirements
 ============
 * PHP >= 5.3.0
-* sockets extension for UDP handling (compile PHP with --with-sockets)
+* sockets extension for UDP handling (compile PHP with --enable-sockets)
 * cURL extension for HTTP handling (required for some protocols)
 * Bzip2 extension for Source protocol (compile PHP with --with-bz2)
 

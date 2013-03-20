@@ -63,27 +63,27 @@ abstract class Protocols {
 
 			if (isset($server_info['connect_addr'])) {
 				$this->connect_addr = $server_info['connect_addr'];
-				if (isset($server_info['connect_port'])) $connect_port = $this->filterPort($server_info['connect_port']);
 			} else
 			if (isset($server_info['connect_host'])) {
 				list($this->connect_addr, $connect_port) = $this->parseHost($server_info['connect_host']);
 			}
+			if (isset($server_info['connect_port'])) $connect_port = $this->filterPort($server_info['connect_port']);
 			
 			if (isset($server_info['addr'])) {
 				$this->query_addr = $server_info['addr'];
-				if (isset($server_info['port'])) $query_port = $this->filterPort($server_info['port']);
 			} else
 			if (isset($server_info['host'])) {
 				list($this->query_addr, $query_port) = $this->parseHost($server_info['host']);
 			}
-
+			if (isset($server_info['port'])) $query_port = $this->filterPort($server_info['port']);
+			
 			if (isset($server_info['query_addr'])) {
 				$this->query_addr = $server_info['query_addr'];
-				if (isset($server_info['query_port'])) $query_port = $this->filterPort($server_info['query_port']);
 			} else
 			if (isset($server_info['query_host'])) {
 				list($this->query_addr, $query_port) = $this->parseHost($server_info['query_host']);
 			}
+			if (isset($server_info['query_port'])) $query_port = $this->filterPort($server_info['query_port']);
 			
 			if (!$this->connect_addr && !$this->query_addr) {
 				throw new UserException("Missing server address info");
@@ -181,7 +181,11 @@ abstract class Protocols {
 		$q_default = $this->query_port; // Main value
 		$c_default = $this->connect_port;
 		
-		if ($q_set && $c_set) return;
+		if ($q_set && $c_set) {
+			$this->query_port = $query_port;
+			$this->connect_port = $connect_port;
+			return;
+		}
 		if ($this->ports_type === self::PT_UNKNOWN)  {
 			throw new UserException("Both query and connect ports must be defined for this protocol");
 		}
