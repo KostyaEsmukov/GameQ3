@@ -31,6 +31,13 @@ class Log {
 	
 	private $loglevel = 4; //0b0100;
 	private $trace = false;
+	private $logger = null;
+	
+	public function __construct() {
+		$this->logger = function($str) {
+			error_log($str);
+		};
+	}
 
 	public function setLogLevel($error, $warning, $debug, $trace) {
 		$this->loglevel = 0;
@@ -40,8 +47,13 @@ class Log {
 		$this->trace = ($trace == true);
 	}
 	
+	public function setLogger($callback) {
+		if (is_callable($callback))
+			$this->logger = $callback;
+	}
+	
 	private function _logger($str) {
-		error_log($str);
+		call_user_func($this->logger, $str);
 	}
 	
 	private function _log($reason, $str) {

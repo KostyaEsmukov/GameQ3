@@ -31,7 +31,7 @@ class Sockets {
 	*/
 	private $stream_select_workaround = false;
 	
-	// Settings
+	// Options
 	private $connect_timeout = 1; // seconds
 	private $send_once_udp = 5;
 	private $send_once_stream = 5;
@@ -84,40 +84,69 @@ class Sockets {
 		$this->stream_select_workaround = (version_compare(phpversion(), '5.4.0', '<'));
 	}
 	
-	public function setVar($key, $val) {
-		if ($key == 'curl_options') {
-			if (!is_array($value))
-				throw new UserException("Value for setVar must be an array. Got value: " . var_export($value, true));
-		} else {		
-			if (!is_int($value))
-				throw new UserException("Value for setVar must be an integer. Got value: " . var_export($value, true));
-		}
-			
+	public function getsetOption($set, $key, $value) {
+		$error = false;
+		
 		switch($key) {
-			case 'connect_timeout': $this->connect_timeout = $value; break;
-			case 'send_once_udp': $this->send_once_udp = $value; break;
-			case 'send_once_stream': $this->send_once_stream = $value; break;
-			case 'usleep_udp': $this->usleep_udp = $value; break; // ns
-			case 'usleep_stream': $this->usleep_stream = $value; break; // ns
-			case 'read_timeout': $this->read_timeout = $value; break;
-			case 'read_retry_timeout': $this->read_retry_timeout = $value; break;
-			case 'loop_timeout': $this->loop_timeout = $value; break; // ms
-			case 'socket_buffer': $this->socket_buffer = $value; break;
-			case 'send_retry': $this->send_retry = $value; break;
-			case 'timeout': $this->timeout = $value; break;
+			case 'connect_timeout':
+			case 'send_once_udp':
+			case 'send_once_stream':
+			case 'usleep_udp':
+			case 'usleep_stream':
+			case 'read_timeout':
+			case 'read_got_timeout':
+			case 'read_retry_timeout':
+			case 'loop_timeout':
+			case 'socket_buffer':
+			case 'send_retry':
 			
-			case 'curl_select_timeout': $this->curl_select_timeout = ($value/1000); break;
-			case 'curl_connect_timeout': $this->curl_connect_timeout = $value; break;
-			case 'curl_total_timeout': $this->curl_total_timeout = $value; break;
+			case 'curl_connect_timeout':
+			case 'curl_total_timeout':
+				if ($set) {
+					if (is_int($value))
+						$this->$key = $value;
+					else
+						$error = 'int';
+				} else {
+					return $this->$key;
+				}
+				break;
+			
+			case 'curl_select_timeout':
+				if ($set) {
+					if (is_int($value))
+						$this->$key = ($value/1000);
+					else
+						$error = 'int';
+				} else {
+					return $this->$key;
+				}
+				break;
+
 			case 'curl_options':
-				foreach($val as $opt => $val) {
-					$this->curl_options[$opt] = $val;
+				if ($set) {
+					if (is_array($value))
+						foreach($val as $opt => $val) {
+							$this->$key[$opt] = $val;
+						}
+					else
+						$error = 'array';
+				} else {
+					return $this->$key;
 				}
 				break;
 			
 			default:
-				throw new UserException("Unknown key in setSockOption: " . var_export($key, true));
+				if ($set)
+					throw new UserException("Unknown option key " . var_export($key, true));
+				else
+					return null;
 		}
+		
+		if ($error !== false)
+			throw new UserException("Value for setOption must be " . $error . ". Got value: " . var_export($value, true));
+
+		return false;
 	}
 
 	// Resolve address

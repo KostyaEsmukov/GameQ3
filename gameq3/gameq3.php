@@ -69,17 +69,49 @@ class GameQ3 {
 	public function setLogLevel($error, $warning = true, $debug = false, $trace = false) {
 		$this->log->setLogLevel($error, $warning, $debug, $trace);
 	}
-
-	public function setOption($key, $value) {
-		if (!is_int($value))
-			throw new UserException("Value for setOption must be int. Got value: " . var_export($value, true));
-
+	
+	public function setLogger($callback) {
+		if (is_callable($callback))
+			$this->log->setLogger($callback);
+		else
+			throw new UserException("Argument for setLogger must be callable");
+	}
+	
+	private function _getsetOption($set, $key, $value = null) {
+		$error = false;
+		
 		switch($key) {
-			case 'servers_count': $this->servers_count = $value; break;
+			case 'servers_count':
+				if ($set) {
+					if (is_int($value))
+						$this->$key = $value;
+					else
+						$error = 'int';
+				} else {
+					return $this->$key;
+				}
+				break;
 			
 			default:
-				$this->sock->setVar($key, $value);
+				return $this->sock->getsetOption($set, $key, $value);
 		}
+		
+		if ($error !== false)
+			throw new UserException("Value for setOption must be " . $error . ". Got value: " . var_export($value, true));
+			
+		return true;
+	}
+
+	public function setOption($key, $value) {
+		return $this->_getsetOption(true, $key, $value);
+	}
+	
+	public function __set($key, $value) {
+		return $this->setOption($key, $value);
+	}
+	
+	public function __get($key) {
+		return $this->_getsetOption(false, $key);
 	}
 	
 	public function setFilter($name, $args = array()) {
