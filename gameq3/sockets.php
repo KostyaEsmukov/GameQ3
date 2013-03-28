@@ -259,9 +259,14 @@ class Sockets {
 
 	private function _createSocketStream($sid, $throw = false) {
 		// This should never happen
-		/*if (!isset($this->sockets_stream_data[$sid]) {
-			throw new GameQ_SocketsException("Cannot create stream socket");
-		}*/
+		if (!isset($this->sockets_stream_data[$sid])) {
+			if ($throw) {
+				throw new GameQ_SocketsException("Cannot create stream socket");
+			} else {
+				$this->log->debug("Cannot create stream socket");
+				return false;
+			}
+		}
 		
 		if (isset($this->sockets_stream[$sid])) {
 			$this->recreated_stream[$sid] = true;
@@ -279,7 +284,7 @@ class Sockets {
 		// proto is already filtered here
 		if ($proto == 'tcp') {
 			$remote_addr = $proto . '://' . $data . ':' . $port;
-		} else		
+		} else
 		if ($proto == 'unix' || $proto = 'udg') {
 			$remote_addr = $proto . '://' . $data;
 		}
@@ -754,6 +759,7 @@ class Sockets {
 			if (!isset($this->sockets_stream_id[$sock_id])) {
 				$this->log->debug("Unknown stream socket id: " . $sock_id);
 				@fclose($socket);
+				continue;
 			}
 			$sid = $this->sockets_stream_id[$sock_id];
 			$res[$sid] = $socket;
@@ -821,14 +827,19 @@ class Sockets {
 						if ($exception) {
 							$this->log->debug("Socket exception. " . $sid);
 
-							// dont read broken socket. it will be recreated if wee still have something to send
+							// Don't read broken socket.
 							if ($is_udp) {
 								unset($read_udp_sid[$sctn][$sid]);
 								if (empty($read_udp_sid[$sctn])) {
 									unset($read_udp[$sctn]);
 								}
 								unset($read_udp_sctn[$sid]);
+								
+								// As it is new socket, there should't be anything to read
+								$this->_createSocketUDP($sctn);
 							} else {
+								// Socket will be recreated on next write (if any)
+								unset($this->sockets_stream[$sid]);
 								unset($read_stream[$sid]);
 							}
 							continue;
