@@ -32,9 +32,9 @@ abstract class Protocols {
 	const PT_CUSTOM = 5; // It is possible to compute ports using custom function fixPorts, which must be overloaded in protocols using this PT.
 	const PT_UNKNOWN = 6; // PT is unknown. Both ports must be set.
 	
-	protected $query_addr;
+	protected $query_addr = false;
 	protected $query_port = false;
-	protected $connect_addr;
+	protected $connect_addr = false;
 	protected $connect_port = false;
 	protected $ports_type = self::PT_UNKNOWN;
 	protected $network = true;
@@ -280,6 +280,12 @@ abstract class Protocols {
 		if (!is_int($this->connect_port)) return false;
 		return str_replace(array('{IP}', '{PORT}'), array($this->connect_addr, $this->connect_port), $this->connect_string);
 	}
+	
+	// Human-readable string that identifies servers.
+	protected function getIdentifier() {
+		if (!$this->network) return false;
+		return $this->connect_addr . ':' . $this->connect_port;
+	}
 
 	
 	protected function filterInt($var) {
@@ -419,9 +425,11 @@ abstract class Protocols {
 		$important_keys = array('num_players', 'max_players', 'hostname');
 		$additional_keys = array('bot_players' => null, 'private_players' => null, 'password' => null, 'version' => null, 'map' => null, 'mode' => null, 'secure' => null);
 		
+		$identifier = $this->getIdentifier();
+		
 		$online = true;
 		
-		if ($this->force_offline) {
+		if ($this->force_offline || $identifier === false) {
 			$online = false;
 		}
 		
@@ -430,7 +438,7 @@ abstract class Protocols {
 			$online = false;
 		}
 		
-		if ($online && !is_int($this->connect_port)) {
+		if ($online && $this->network && !is_int($this->connect_port)) {
 			$this->debug("Connect_port is not set");
 			$online = false;
 		}
@@ -454,6 +462,7 @@ abstract class Protocols {
 		$this->result->addInfo('online', $online);
 		$this->result->addInfo('ping_average', $ping);
 		$this->result->addInfo('retry_count', $this->retry_cnt);
+		$this->result->addInfo('identifier', $identifier);
 		
 		$res = $this->result->fetch();
 		$this->result = null;

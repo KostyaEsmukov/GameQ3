@@ -1,7 +1,6 @@
 <?php
 
-chdir(dirname(__FILE__) . "/../"); // let autoload work
-require './gameq3/gameq3.php';
+require './../gameq3/gameq3.php';
 
 // Define your servers,
 // see list.php for all supported games and identifiers.
@@ -24,7 +23,7 @@ $servers = array(
 );
 
 
-$gq = new GameQ3\GameQ3();
+$gq = new \GameQ3\GameQ3();
 
 $gq->setLogLevel(true, true, true, true);
 $gq->setFilter('colorize', array(

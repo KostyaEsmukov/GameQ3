@@ -858,7 +858,7 @@ class Sockets {
 							// if sid is already timed out
 							if (!isset($read_udp_sctn[$sid])) {
 								$this->log->debug("Received timed out sid " . $sid);
-								continue;
+								//continue;
 							}
 						}
 							

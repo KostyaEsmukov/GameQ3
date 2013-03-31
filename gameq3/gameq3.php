@@ -45,6 +45,7 @@ if (version_compare(phpversion(), '5.3.3', '<')) {
 	spl_autoload_register();
 }
 
+set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__). '/../'));
 
 class GameQ3 {
 
@@ -123,6 +124,79 @@ class GameQ3 {
 
 	public function unsetFilter($name) {
 		unset($this->filters[$name]);
+	}
+	
+	public function getProtocolInfo($protocol) {
+		if (!is_string($protocol))
+			throw new UserException("Protocol must be a string");
+			
+		$className = "\\GameQ3\\Protocols\\". ucfirst(strtolower($protocol));
+		
+		$reflection = new \ReflectionClass($className);
+		
+		if(!$reflection->IsInstantiable()) {
+			continue;
+		}
+		
+		$dp = $reflection->getDefaultProperties();
+		$dc = $reflection->getConstants();
+		$pt_string = 'UNKNOWN';
+
+		foreach($dc as $name => $val) {
+			// filter out non-PT constants
+			if (substr($name, 0, 3) !== "PT_") continue;
+
+			if ($val === $dp['ports_type']) {
+				$pt_string = substr($name, 3);
+				break;
+			}
+		}
+		
+		$res = array(
+			'protocol' => $dp['protocol'],
+			'name' => $dp['name'],
+			'name_long' => $dp['name_long'],
+			'query_port' => (is_int($dp['query_port']) ? $dp['query_port'] : null),
+			'connect_port' => (is_int($dp['connect_port']) ? $dp['connect_port'] : ($pt_string === 'SAME' ? $dp['query_port'] : null)), // connect_port shouldn't be set in PT_SAME
+			'ports_type' => $dp['ports_type'],
+			'ports_type_string' => $pt_string,
+			'ports_type_info' => array(
+				'connect_port' => true,
+				'query_port' => ($pt_string !== 'SAME'), // Only PT_SAME ignores query port
+			),
+			'network' => $dp['network'],
+			'connect_string' => (is_string($dp['connect_string']) ? $dp['connect_string'] : null),
+		);
+		
+		unset($reflection);
+		
+		return $res;
+	}
+	
+	public function getAllProtocolsInfo() {
+		$protocols_path = dirname(__FILE__) . "/protocols/";
+
+		$dir = dir($protocols_path);
+		$protocols = array();
+
+		while (true) {
+			$entry = $dir->read();
+			if ($entry === false) break;
+			
+			if(!is_file($protocols_path.$entry)) {
+				continue;
+			}
+			
+			$protocol = pathinfo($entry, PATHINFO_FILENAME);
+			
+			$protocols[strtolower($protocol)] = $this->getProtocolInfo($protocol);
+		}
+		
+		unset($dir);
+
+		ksort($protocols);
+		
+		return $protocols;
 	}
 
 	/**
