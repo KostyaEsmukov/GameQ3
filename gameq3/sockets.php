@@ -864,6 +864,11 @@ class Sockets {
 							
 						unset($this->send[$sid]);
 						
+						if (!isset($responses[$sid])) {
+							$this->log->debug("Responses array does not exists for sid " . $sid);
+							continue;
+						}
+						
 						$responses[$sid]['rc']++;
 						$responses[$sid]['p'] []= $buf;
 						

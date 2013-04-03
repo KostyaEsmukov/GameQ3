@@ -196,7 +196,7 @@ class Source extends \GameQ3\Protocols {
 			$score = $buf->readInt32Signed();
 			$time = $buf->readFloat32();
 			
-			$this->result->addPlayer($name, $score, null, array('time' => $time, 'time_h' => gmdate("H:i:s", $time)));
+			$this->result->addPlayer($name, $score, null, array('time' => gmdate("H:i:s", $time)));
 		}
 	}
 	

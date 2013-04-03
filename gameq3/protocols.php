@@ -272,7 +272,7 @@ abstract class Protocols {
 	}
 	
 	final protected function getConnectString() {
-		if (!is_string($this->connect_string)) return false;
+		if (!is_string($this->connect_string)) return null;
 		return $this->genConnectString();
 	}
 	
