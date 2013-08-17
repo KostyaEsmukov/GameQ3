@@ -60,6 +60,7 @@ class Sockets {
 	private $sockets_stream = array();
 	private $sockets_stream_id = array();
 	private $sockets_stream_data = array();
+	private $sockets_stream_close = array();
 	
 	private $curl_mh = null;
 	private $curl_running = false;
@@ -161,12 +162,12 @@ class Sockets {
 			if (!filter_var($t, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
 				throw new SocketsException("Wrong address (IPv6 filter failed) '" . $addr . "'");
 			}
-			$this->cache_addr[$addr] = array(AF_INET6, $t);
+			$this->cache_addr[$addr] = array(\AF_INET6, $t);
 			return $this->cache_addr[$addr];
 		}
 		
 		if (filter_var($addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-			$this->cache_addr[$addr] = array(AF_INET, $addr);
+			$this->cache_addr[$addr] = array(\AF_INET, $addr);
 			return $this->cache_addr[$addr];
 		}
 		
@@ -179,10 +180,10 @@ class Sockets {
 			// In case php guys add IPv6 support for this function in future versions.
 			$r = false;
 			if (filter_var($gh, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-				$r = array(AF_INET, $gh);
+				$r = array(\AF_INET, $gh);
 			} else
 			if (filter_var($gh, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-				$r = array(AF_INET6, $gh);
+				$r = array(\AF_INET6, $gh);
 			}
 			if ($r !== false) {
 				$this->cache_addr[$addr] = $r;
@@ -212,10 +213,10 @@ class Sockets {
 		// Find out IP version
 		$r = false;
 		if (filter_var($remote_addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
-			$r = array(AF_INET, $remote_addr);
+			$r = array(\AF_INET, $remote_addr);
 		} else
 		if (filter_var($remote_addr, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
-			$r = array(AF_INET6, $remote_addr);
+			$r = array(\AF_INET6, $remote_addr);
 		}
 		if ($r !== false) {
 			$this->cache_addr[$addr] = $r;
@@ -234,10 +235,7 @@ class Sockets {
 		
 		if (isset($this->sockets_udp[$sctn])) {
 			$this->recreated_udp[$sctn] = true;
-			if (is_resource($this->sockets_udp[$sctn])) {
-				@socket_close($this->sockets_udp[$sctn]);
-			}
-			unset($this->sockets_udp[$sctn]);
+			$this->_closeSocketUDP($sctn);
 		}
 		
 		$sock = socket_create($this->sockets_udp_data[$sctn], SOCK_DGRAM, SOL_UDP);
@@ -252,7 +250,7 @@ class Sockets {
 			}
 		}
 		socket_set_nonblock($sock);
-		//socket_bind($sock, ($this->sockets_udp_data[$sctn] === AF_INET ? '0.0.0.0' : '::0'));
+		//socket_bind($sock, ($this->sockets_udp_data[$sctn] === \AF_INET ? '0.0.0.0' : '::0'));
 		$this->sockets_udp[$sctn] = $sock;
 		return true;
 	}
@@ -270,11 +268,7 @@ class Sockets {
 		
 		if (isset($this->sockets_stream[$sid])) {
 			$this->recreated_stream[$sid] = true;
-			if (is_resource($this->sockets_stream[$sid])) {
-				if ($this->stream_select_workaround) unset($this->sockets_stream_id[(int)$this->sockets_stream[$sid]]);
-				@fclose($this->sockets_stream[$sid]);
-			}
-			unset($this->sockets_stream[$sid]);
+			$this->_closeSocketStream($sid);
 		}
 		
 		$proto = $this->sockets_stream_data[$sid]['pr'];
@@ -311,6 +305,28 @@ class Sockets {
 		
 		if ($this->stream_select_workaround) $this->sockets_stream_id[(int)$socket] = $sid;
 		return true;
+	}
+
+	private function _closeSocketUDP($sctn) {
+		if (!isset($this->sockets_udp[$sctn]))
+			return;
+
+		if (is_resource($this->sockets_udp[$sctn])) {
+			@socket_close($this->sockets_udp[$sctn]);
+		}
+		unset($this->sockets_udp[$sctn]);
+	}
+
+	private function _closeSocketStream($sid) {
+		if (!isset($this->sockets_stream[$sid]))
+			return;
+
+		if (is_resource($this->sockets_stream[$sid])) {
+			if ($this->stream_select_workaround)
+				unset($this->sockets_stream_id[(int)$this->sockets_stream[$sid]]);
+			@fclose($this->sockets_stream[$sid]);
+		}
+		unset($this->sockets_stream[$sid]);
 	}
 	
 	private function _createCurlHandle($sid, $url, $curl_opts, $return_headers) {
@@ -435,7 +451,7 @@ class Sockets {
 			} else {
 				// some domains may have multiple ip addreses. to avoid different addreses, resolved from one domain, we going to use resolved IPs in sid
 				list($domain, $data) = $this->_resolveAddr($queue_opts['addr']);
-				$domain_str = ($domain == AF_INET ? '4' : '6');
+				$domain_str = ($domain == \AF_INET ? '4' : '6');
 			}
 			$port = $queue_opts['port'];
 		} else
@@ -571,9 +587,13 @@ class Sockets {
 			// for stream_select workaround (see header of this class)
 			private $sockets_stream_id = array();
 			resource_id => sid
+
+			// which sockets should be closed on the end of request
+			private $sockets_stream_close = array();
+			sid => true
 			*/
 			if (!isset($this->sockets_stream[$sid])) {
-				if ($domain === AF_INET6)
+				if ($domain === \AF_INET6)
 					$data = '['.$data.']';
 					
 				$this->sockets_stream_data[$sid] = array(
@@ -583,6 +603,10 @@ class Sockets {
 					//'c' => true, // just created
 				);
 				$this->_createSocketStream($sid, true);
+			}
+
+			if (isset($queue_opts['close']) && $queue_opts['close']) {
+				$this->sockets_stream_close[$sid] = true;
 			}
 			
 			$this->send[$sid] = array(
@@ -775,7 +799,7 @@ class Sockets {
 				return false;
 			}
 			
-			$tio = max(0,min($tio, self::SELECT_MAXTIMEOUT*1000));
+			$tio = max(0, min($tio, self::SELECT_MAXTIMEOUT*1000));
 			$write = null; // we don't need to write
 			if ($is_udp) {
 				if (empty($read_udp)) continue;
@@ -846,7 +870,7 @@ class Sockets {
 						}
 
 						if ($is_udp) {
-							$sidnt = ($this->sockets_udp_data[$sctn] == AF_INET ? '4' : '6').':'.$name.':'.$port;
+							$sidnt = ($this->sockets_udp_data[$sctn] == \AF_INET ? '4' : '6').':'.$name.':'.$port;
 							// packet from unknown sender
 							if (!isset($this->sockets_udp_sid[$sctn][$sidnt])) {
 								$this->log->debug("Packet from unknown sender " . $name . ":" . $port);
@@ -1183,6 +1207,11 @@ class Sockets {
 			}
 		}
 
+		// Close sockets
+		foreach ($this->sockets_stream_close as $sid => $true) {
+			$this->_closeSocketStream($sid);
+		}
+
 		// Poll curl
 		$this->_procCurl($responses, false);
 
@@ -1191,10 +1220,12 @@ class Sockets {
 		$this->send = array();
 		$this->recreated_udp = array();
 		$this->recreated_stream = array();
+		$this->sockets_stream_close = array();
 
 		return $responses;
 	}
 	
+	// when there is no more stream and socket responses left
 	public function finalProcess() {
 		$responses = array();
 		// Poll curl
@@ -1205,14 +1236,12 @@ class Sockets {
 	
 	
 	public function cleanUp() {
-		foreach($this->sockets_udp as $snum => &$sock) {
-			if (is_resource($this->sockets_udp[$snum]))
-				@socket_close($this->sockets_udp[$snum]);
+		foreach($this->sockets_udp as $sctn => &$sock) {
+			$this->_closeSocketUDP($sctn);
 		}
 		
 		foreach($this->sockets_stream as $sid => &$sock) {
-			if (is_resource($this->sockets_stream[$sid]))
-				@fclose($this->sockets_stream[$sid]);
+			$this->_closeSocketStream($sid);
 		}
 		
 		$this->cache_addr = array();

@@ -69,10 +69,10 @@ class Log {
 		// http://php.net/manual/ru/function.debug-backtrace.php
 		$php_version = phpversion();
 		if (version_compare(($php_version), '5.4.0', '>=')) {
-			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($trace_limit + $trace_skip + self::TRACE_IGNORE));
+			$trace = debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, ($trace_limit + $trace_skip + self::TRACE_IGNORE));
 		} else
 		if (version_compare(($php_version), '5.3.6', '>=')) {
-			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+			$trace = debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS);
 		} else {
 			$trace = debug_backtrace(false);
 		}

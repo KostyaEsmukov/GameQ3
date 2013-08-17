@@ -67,10 +67,22 @@ class GameQ3 {
 		$this->sock = new Sockets($this->log);
 	}
 	
+	/**
+	 * Set logging rules.
+	 * Logger uses error_log() by default. This can be changed using GameQ3::setLogger()
+	 * @param bool $error Log errors or not
+	 * @param bool $warning Log warnings or not
+	 * @param bool $debug Log debug messages or not
+	 * @param bool $trace Log backtrace or not
+	 */
 	public function setLogLevel($error, $warning = true, $debug = false, $trace = false) {
 		$this->log->setLogLevel($error, $warning, $debug, $trace);
 	}
 	
+	/**
+	 * Set logger function.
+	 * @param callable $callback function($msg)
+	 */
 	public function setLogger($callback) {
 		if (is_callable($callback))
 			$this->log->setLogger($callback);
@@ -103,7 +115,15 @@ class GameQ3 {
 		return true;
 	}
 
+	/**
+	 * Set option. See readme for a list of options.
+	 * @param string $key
+	 * @param mixed $value
+	 * @throws \GameQ3\UserException
+	 */
 	public function setOption($key, $value) {
+		if ($this->started)
+			throw new UserException("You cannot set options while in request");
 		return $this->_getsetOption(true, $key, $value);
 	}
 	
@@ -115,17 +135,39 @@ class GameQ3 {
 		return $this->_getsetOption(false, $key);
 	}
 	
+	/**
+	 * Set filter. See readme for a list of filters
+	 * @param string $name Filter name
+	 * @param array $args Filter options
+	 * @throws \GameQ3\UserException
+	 */
 	public function setFilter($name, $args = array()) {
+		if ($this->started)
+			throw new UserException("You cannot set filter while in request");
+
 		if (!is_array($args))
 			throw new UserException("Args must be an array in setFilter (name '" . $name . "')");
 
 		$this->filters[$name] = $args;
 	}
 
+	/**
+	 * Unset filter.
+	 * @param string $name Filter name
+	 * @throws \GameQ3\UserException
+	 */
 	public function unsetFilter($name) {
+		if ($this->started)
+			throw new UserException("You cannot unset filter while in request");
+
 		unset($this->filters[$name]);
 	}
 	
+	/**
+	 * Returns information about protocol.
+	 * @param string $protocol
+	 * @return array
+	 */
 	public function getProtocolInfo($protocol) {
 		if (!is_string($protocol))
 			throw new UserException("Protocol must be a string");
@@ -173,6 +215,11 @@ class GameQ3 {
 		return $res;
 	}
 	
+	/**
+	 * Returns array of info for each protocol
+	 * @see GameQ3::getProtocolInfo()
+	 * @return array
+	 */
 	public function getAllProtocolsInfo() {
 		$protocols_path = dirname(__FILE__) . "/protocols/";
 
@@ -201,11 +248,13 @@ class GameQ3 {
 
 	/**
 	 * Add a server to be queried
-	 *
 	 * @param array $server_info
 	 * @throws \GameQ3\UserException
 	 */
 	public function addServer($server_info) {
+		if ($this->started)
+			throw new UserException("You cannot add servers while in request");
+
 		if (!is_array($server_info))
 			throw new UserException("Server_info must be an array");
 			
@@ -248,7 +297,15 @@ class GameQ3 {
 		}
 	}
 	
+	/**
+	 * Unset server from list of serers to query
+	 * @param $id Server id
+	 * @throws \GameQ3\UserException
+	 */
 	public function unsetServer($id) {
+		if ($this->started)
+			throw new UserException("You cannot unset servers while in request");
+
 		unset($this->servers[$id]);
 	}
 
@@ -262,6 +319,10 @@ class GameQ3 {
 		$this->request_servers = array();
 	}
 	
+	/**
+	 * Request added servers and return all responses
+	 * @return array
+	 */
 	public function requestAllData() {
 		$result = array();
 		while (true) {
@@ -279,6 +340,11 @@ class GameQ3 {
 	}
 	
 	// returns array until we have servers to reqest. otherwise returns false
+
+	/**
+	 * Request added servers and return responses by parts. Returns false when there are no responses left.
+	 * @return mixed array or false
+	 */
 	public function requestPartData() {
 		return $this->_request();
 	}

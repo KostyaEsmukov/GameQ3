@@ -36,7 +36,7 @@ class Minecraft extends \GameQ3\Protocols {
 	
 	
 	public function init() {
-		$this->queue('status', 'tcp', $this->packets['status'], array('response_count' => 1));
+		$this->queue('status', 'tcp', $this->packets['status'], array('response_count' => 1, 'close' => true));
 	}
 	
 	protected function processRequests($qid, $requests) {
