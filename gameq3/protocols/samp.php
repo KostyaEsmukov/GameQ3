@@ -78,7 +78,7 @@ class Samp extends \GameQ3\Protocols {
 	}
 
 	protected function preFetch() {
-		$this->result->addInfo('full', $this->players_received);
+		$this->result->addInfo('full', (!$this->isRequested('players') || $this->players_received));
 	}
 	
 	protected function processRequests($qid, $requests) {
