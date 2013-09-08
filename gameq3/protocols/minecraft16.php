@@ -48,7 +48,7 @@ class Minecraft16 extends \GameQ3\Protocols\Minecraft {
 		$packet = "\xFE\x01\xFA";
 		$packet .= $this->_toShort(11);
 		$packet .= $this->_networkString("MC|PingHost");
-		$packet .= 7 + 2 * strlen($hostname);
+		$packet .= $this->_toShort(7 + 2 * strlen($hostname));
 		$packet .= $this->protocol_version;
 		$packet .= $this->_toShort(strlen($hostname));
 		$packet .= $this->_networkString($hostname);

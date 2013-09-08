@@ -1,6 +1,6 @@
 <?php
 
-require './../gameq3/gameq3.php';
+require __DIR__ . '/../gameq3/gameq3.php';
 
 $gq = new \GameQ3\GameQ3();
 
