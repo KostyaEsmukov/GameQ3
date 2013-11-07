@@ -30,7 +30,12 @@ class Bf3 extends \GameQ3\Protocols {
 		'players' => "\x00\x00\x00\x00\x24\x00\x00\x00\x02\x00\x00\x00\x0b\x00\x00\x00listPlayers\x00\x03\x00\x00\x00\x61ll\x00",
 	);
 
-	protected $query_port = 25200;
+	/*
+	Bf3 servers must be rent, so query port is always different. In case default port exists, it makes no sense to use it, because most servers use different ports.
+	See this issue: https://github.com/kostya0shift/GameQ3/issues/7
+	*/
+	// protected $query_port = 25200;
+
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'bf3';
