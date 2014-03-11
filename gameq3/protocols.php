@@ -300,6 +300,14 @@ abstract class Protocols {
 		return $var;
 	}
 
+	final protected function forceRequested($s, $v) {
+		if ($v) {
+			unset($this->unst[$s]);
+		} else {
+			$this->unst[$s] = true;
+		}
+	}
+
 
 	final protected function isRequested($s) {
 		return (!isset($this->unst[$s]));
