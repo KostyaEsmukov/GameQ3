@@ -114,6 +114,7 @@ class Source extends \GameQ3\Protocols {
 
 			// Check to see if this is compressed
 			if($request_id & 0x80000000) {
+
 				// Check to see if we have Bzip2 installed
 				if(!function_exists('bzdecompress')) {
 					$this->error('Bzip2 is not installed.  See http://www.php.net/manual/en/book.bzip2.php for more info.');
@@ -137,6 +138,7 @@ class Source extends \GameQ3\Protocols {
 				// Set the new packs
 				$packs[$cur_packet] = $result;
 			} else {
+
 				// Gold source does things a bit different
 				if(!$this->source_engine) {
 					$packet_number = $buffer->readInt8();
@@ -199,15 +201,8 @@ class Source extends \GameQ3\Protocols {
 			$this->result->addPlayer($name, $score, null, array('time' => gmdate("H:i:s", $time)));
 		}
 	}
-	
-	
-	protected function _process_rules($packets) {
-	
-		$packet = $this->_preparePackets($packets);
-		
-		if (!$packet) return false;
-		
 
+	protected function _parse_rules(&$packet) {
 		$buf = new \GameQ3\Buffer($packet);
 
 		$header = $buf->read(5);
@@ -242,6 +237,17 @@ class Source extends \GameQ3\Protocols {
 		
 		if ($m !== false)
 			$this->result->addGeneral('mode', $m);
+	}
+	
+	
+	protected function _process_rules($packets) {
+	
+		$packet = $this->_preparePackets($packets);
+		
+		if (!$packet) return false;
+		
+		$this->_parse_rules($packet);
+
 	}
 	
 	
