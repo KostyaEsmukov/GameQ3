@@ -122,7 +122,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	}
 	
 	public function init() {
-		$this->queue('all', 'tcp', $this->packet);
+		$this->queue('all', 'tcp', $this->packet, array('close' => true));
 	}
 	
 	protected function processRequests($qid, $requests) {
