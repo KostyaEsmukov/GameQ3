@@ -38,7 +38,7 @@ class Sockets {
 	private $usleep_udp = 100; // ns
 	private $usleep_stream = 100; // ns
 	private $read_timeout = 600;
-	private $read_got_timeout = 30;
+	private $read_got_timeout = 100;
 	private $read_retry_timeout = 200;
 	private $loop_timeout = 2; // ms
 	private $socket_buffer = 8192;
