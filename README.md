@@ -113,3 +113,4 @@ Options you should tweak first are **bold**.
     Arguments:
     * sortkey - string key of player on which to sort
     * order - string "asc" or "desc" -  order of sorting
+* strip_badchars - strip non-utf8 characters and trim whitespace in every string of the result.
