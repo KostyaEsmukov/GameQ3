@@ -10,7 +10,7 @@ The main differences are queue style of packets and *huge* socket class which us
 Some protocols are like in GameQ v2, but protocol classes are not compatible.
 
 ## Requirements
-* PHP >= 5.3.0
+* PHP >= 5.4.0
 * sockets extension for UDP handling and AF_INET* constants (compile PHP with --enable-sockets flag)
 * cURL extension for HTTP handling (required for some protocols)
 * Bzip2 extension for Source protocol (compile PHP with --with-bz2 flag)

@@ -33,19 +33,10 @@ namespace GameQ3;
 
 // Autoload classes
 spl_autoload_extensions(".php");
-
-// https://bugs.php.net/bug.php?id=51991
-if (version_compare(phpversion(), '5.3.3', '<')) {
-	spl_autoload_register(
-		function ($class) {
-			spl_autoload(str_replace('\\', DIRECTORY_SEPARATOR, ltrim($class, '\\')));
-		}
-	);
-} else {
-	spl_autoload_register();
-}
+spl_autoload_register();
 
 set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__). '/../'));
+
 
 class GameQ3 {
 

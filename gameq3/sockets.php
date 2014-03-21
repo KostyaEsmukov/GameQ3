@@ -26,10 +26,7 @@ class Sockets {
 	/*
 		arrays from socket_select preserve keys as of PHP 5.3.0: https://bugs.php.net/bug.php?id=44197
 		arrays from stream_select preserve keys as of PHP 5.4.0: https://bugs.php.net/bug.php?id=53427
-		
-		As GameQ3 should support PHP 5.3.0, we should make workaround just for stream_select.
 	*/
-	private $stream_select_workaround = false;
 	
 	// Options
 	private $connect_timeout = 1; // seconds
@@ -82,7 +79,6 @@ class Sockets {
 	
 	public function __construct($log) {
 		$this->log = $log;
-		$this->stream_select_workaround = (version_compare(phpversion(), '5.4.0', '<'));
 	}
 	
 	public function getsetOption($set, $key, $value) {
@@ -303,7 +299,6 @@ class Sockets {
 		$this->sockets_stream[$sid] = $socket;
 		$this->sockets_stream_data[$sid]['c'] = true;
 		
-		if ($this->stream_select_workaround) $this->sockets_stream_id[(int)$socket] = $sid;
 		return true;
 	}
 
@@ -322,8 +317,6 @@ class Sockets {
 			return;
 
 		if (is_resource($this->sockets_stream[$sid])) {
-			if ($this->stream_select_workaround)
-				unset($this->sockets_stream_id[(int)$this->sockets_stream[$sid]]);
 			@fclose($this->sockets_stream[$sid]);
 		}
 		unset($this->sockets_stream[$sid]);
@@ -583,10 +576,6 @@ class Sockets {
 			// for socket recreation and cleaning
 			private $sockets_stream_data = array();
 			sid => array('pr' => proto, 'd' => data, 'p' => port, 'c' => just_created)
-			
-			// for stream_select workaround (see header of this class)
-			private $sockets_stream_id = array();
-			resource_id => sid
 
 			// which sockets should be closed on the end of request
 			private $sockets_stream_close = array();
@@ -640,8 +629,6 @@ class Sockets {
 			$except = $sockets_stream;
 			$read = $sockets_stream;
 			if (!@stream_select($read, $write, $except, 0)) break;
-			$this->_stream_selectWorkaround($read);
-			$this->_stream_selectWorkaround($except);
 			
 			foreach($read as $sid => &$sock) {
 				// Skip just created sockets as there can be hello/welcome packets
@@ -774,23 +761,6 @@ class Sockets {
 		return $long_to;
 	}
 	
-	private function _stream_selectWorkaround(&$select) {
-		if (!$this->stream_select_workaround) return;
-
-		$res = array();
-		foreach($select as $key => &$socket) {
-			$sock_id = (int)$socket;
-			if (!isset($this->sockets_stream_id[$sock_id])) {
-				$this->log->debug("Unknown stream socket id: " . $sock_id);
-				@fclose($socket);
-				continue;
-			}
-			$sid = $this->sockets_stream_id[$sock_id];
-			$res[$sid] = $socket;
-		}
-		$select = $res;
-	}
-	
 	private function _procRead($start_time, $timeout, &$responses, &$read_udp, &$read_udp_sctn, &$read_udp_sid, &$read_stream) {
 		foreach(array(true, false) as $is_udp) {
 			$tio = (($start_time - microtime(true))*1000 + $timeout) * 1000;
@@ -811,8 +781,6 @@ class Sockets {
 				$except = $read_stream; // check for errors
 				$read = $read_stream; // incoming packets
 				$sr = @stream_select($read, $write, $except, 0, $tio);
-				$this->_stream_selectWorkaround($read);
-				$this->_stream_selectWorkaround($except);
 			}
 
 			// as there can be much packets on a single socket, we are going to read them until we are done
@@ -960,8 +928,6 @@ class Sockets {
 					$except = $read_stream; // check for errors
 					$read = $read_stream; // incoming packets
 					$sr = @stream_select($read, $write, $except, 0);
-					$this->_stream_selectWorkaround($read);
-					$this->_stream_selectWorkaround($except);
 				}
 			}
 		}
