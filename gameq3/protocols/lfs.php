@@ -125,7 +125,7 @@ class Lfs extends \GameQ3\Protocols {
 				}
 			}
 			
-			$this->result->addPlayer($name, 0, null, array('url' => $url));
+			$this->result->addPlayer($name, null, null, array('url' => $url));
 		}
 
 /*

@@ -219,7 +219,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 					}
 					
 					// cid - channel id. But most probably we will not use that value as we don't use teams, so we don't pass to to teamid
-					$this->result->addPlayer($name, 0, null, $player);
+					$this->result->addPlayer($name, null, null, $player);
 				}
 			} else
 			if ($type === "channellist") {

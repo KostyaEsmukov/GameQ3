@@ -68,7 +68,7 @@ class kerbalmultiplayer extends \GameQ3\Protocols {
 				foreach ($pa as $pname) {
 					$pname = trim($pname);
 
-					$this->result->addPlayer($pname, 0);
+					$this->result->addPlayer($pname);
 				}
 				break;
 

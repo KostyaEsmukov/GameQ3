@@ -78,7 +78,7 @@ class Result {
 		return true;
 	}
 	
-	public function addPlayer($name, $score, $teamid = null, $other = array()) {
+	public function addPlayer($name, $score=null, $teamid=null, $other=array()) {
 		if ($this->ign_players) return false;
 		$this->result['players'] []= array(
 			'name' => $name,
