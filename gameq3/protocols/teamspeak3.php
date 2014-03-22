@@ -27,6 +27,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
 		'login' => "login client_login_name=%s client_login_password=%s\x0A",
+		'clientlogin' => "clientupdate client_nickname=%s\x0A",
 		
 		'usesid' => "use sid=%s\x0A",
 		'useport' => "use port=%d\x0A",
@@ -83,32 +84,38 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		
 		$formed_packet = "";
 		$reply_format = array();
-		
+
 		if (isset($this->server_info['login_name']) && isset($this->server_info['login_password'])) {
-			$formed_packet .= sprintf($this->packets['login'], $this->server_info['login_name'], $this->server_info['login_password']);
+			$formed_packet .= $this->_formCommand('login', $this->server_info['login_name'], $this->server_info['login_password']);
 			$reply_format []= 'cmd';
 		}
-		
-			
+
 		if (isset($this->server_info['sid'])) {
-			$formed_packet .= sprintf($this->packets['usesid'], $this->server_info['sid']);
+			$formed_packet .= $this->_formCommand('usesid', $this->server_info['sid']);
 		} else {
 			if (!is_int($this->connect_port))
 				throw new UserException("Both connect_port and sid are missed in TS3");
-			$formed_packet .= sprintf($this->packets['useport'], $this->connect_port);
+			$formed_packet .= $this->_formCommand('useport', $this->connect_port);
 		}
 		$reply_format []= 'cmd';
-		
-		$formed_packet .= $this->packets['serverinfo'];
+
+		if (isset($this->server_info['nickname'])) {
+			$formed_packet .= $this->_formCommand('clientlogin', $this->server_info['nickname']);
+			$reply_format []= 'cmd';
+		}
+
+		$formed_packet .= $this->_formCommand('serverinfo');
 		$reply_format []= 'serverinfo';
+
 		if ($this->isRequested('players')) {
-			$formed_packet .= $this->packets['clientlist'];
+			$formed_packet .= $this->_formCommand('clientlist');
 			$reply_format []= 'clientlist';
 			//$formed_packet .= $this->packets['servergroup'];
 			//$reply_format []= 'servergroup';
 		}
+
 		if ($this->isRequested('channels')) {
-			$formed_packet .= $this->packets['channellist'];
+			$formed_packet .= $this->_formCommand('channellist');
 			$reply_format []= 'channellist';
 			//$formed_packet .= $this->packets['channelgroup'];
 			//$reply_format []= 'channelgroup';
@@ -235,10 +242,28 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		}
 
 	}
-	
 
 	protected function _unescape($str) {
 		return str_replace($this->string_find, $this->string_replace, $str);
+	}
+
+	protected function _escape($str) {
+		return str_replace($this->string_replace, $this->string_find, $str);
+	}
+
+	// command_name, arg1, arg2, ...
+	protected function _formCommand($command) {
+		$args = func_get_args();
+		array_shift($args);
+
+		$that = $this;
+		array_walk($args, function (&$v) use ($that) {
+			$v = $that->_escape($v);
+		});
+
+		array_unshift($args, $this->packets[$command]);
+
+		return call_user_func_array('sprintf', $args);
 	}
 	
 	protected function _verify_response($response) {
