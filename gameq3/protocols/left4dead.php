@@ -22,4 +22,18 @@ namespace GameQ3\protocols;
 class Left4dead extends \GameQ3\Protocols\Source {
 	protected $name = "left4dead";
 	protected $name_long = "Left 4 Dead";
+
+	protected function _detectMode($game_description, $appid) {
+		if ($appid == 500) {
+			if (strpos($game_description, '- Co-op')) {
+				$this->result->addGeneral('mode', 'coop');
+			} else
+			if (strpos($game_description, '- Survival')) {
+				$this->result->addGeneral('mode', 'survival');
+			} else
+			if (strpos($game_description, '- Versus')) {
+				$this->result->addGeneral('mode', 'versus');
+			}
+		}
+	}
 }

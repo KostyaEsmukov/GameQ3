@@ -191,15 +191,65 @@ class Source extends \GameQ3\Protocols {
 			return;
 		}
 
+		$players = array();
+		$players_times = array();
+
+		/*
+			Detecting bots by name is a bad idea.
+			But bots usually have the same 'time', which is max.
+			So we stupidly mark players with the maximum time as bots.
+		*/
+
 		// Players list
 		while ($buf->getLength()) {
 			$id = $buf->readInt8();
 			$name = $buf->readString();
 			$score = $buf->readInt32Signed();
 			$time = $buf->readFloat32();
-			
-			$this->result->addPlayer($name, $score, null, array('time' => gmdate("H:i:s", $time)));
+
+			$players []= array(
+				'name' => $name,
+				'score' => $score,
+				'bot' => false,
+				'time' => $time,
+			);
+
+			$players_times []= array(
+				'pos' => count($players) - 1,
+				'time' => $time,
+			);
+
 		}
+
+		$bots_count = $this->result->getGeneral('bot_players');
+
+		if ($bots_count) {
+			usort($players_times, function ($a, $b) {
+				if ($a['time'] == $b['time'])
+					return 0;
+	
+				return ($b['time'] < $a['time']) ? -1 : 1;
+			});
+	
+			
+			$i = 0;
+			foreach($players_times as $r) {
+				if ($i >= $bots_count)
+					break;
+
+				$players[$r['pos']]['bot'] = true;
+
+				$i++;
+			}
+		}
+
+		foreach($players as $player) {
+			$this->result->addPlayer($player['name'], $player['score'], null, array('time' => gmdate("H:i:s", $player['time'])), $player['bot']);
+		}
+	}
+
+	protected function _put_var($key, $val) {
+		$this->result->addSetting($key, $val);
 	}
 
 	protected function _parse_rules(&$packet) {
@@ -217,6 +267,7 @@ class Source extends \GameQ3\Protocols {
 
 		// We can tell it is dm (it's 90%), but lets try to be honest and report only trustful info.
 		$m = false;
+
 		while ($buf->getLength()) {
 			$key = $buf->readString();
 			$val = $buf->readString();
@@ -232,7 +283,8 @@ class Source extends \GameQ3\Protocols {
 				case 'tf_gamemode_payload':	if ($val == 1) $m = 'payload'; break;
 				case 'tf_gamemode_sd':		if ($val == 1) $m = 'sd'; break;
 			}
-			$this->result->addSetting($key, $val);
+
+			$this->_put_var($key, $val);
 		}
 		
 		if ($m !== false)
@@ -247,6 +299,14 @@ class Source extends \GameQ3\Protocols {
 		if (!$packet) return false;
 		
 		$this->_parse_rules($packet);
+
+	}
+
+	protected function _detectMode($game_description, $appid) {
+
+	}
+
+	protected function _parseDetailsExtension(&$buf, $appid) {
 
 	}
 	
@@ -308,19 +368,8 @@ class Source extends \GameQ3\Protocols {
 		if ($this->source_engine) {
 			$appid = $buf->readInt16();
 			$this->result->addInfo('app_id', $appid);
-			
-			// L4D1
-			if ($appid == 500) {
-				if (strpos($game_description, '- Co-op')) {
-					$this->result->addGeneral('mode', 'coop');
-				} else
-				if (strpos($game_description, '- Survival')) {
-					$this->result->addGeneral('mode', 'survival');
-				} else
-				if (strpos($game_description, '- Versus')) {
-					$this->result->addGeneral('mode', 'versus');
-				}
-			}
+
+			$this->_detectMode($game_description, $appid);
 		}
 
 		$this->result->addGeneral('num_players', $buf->readInt8());
@@ -330,8 +379,7 @@ class Source extends \GameQ3\Protocols {
 		if (!$this->source_engine) {
 			$this->result->addGeneral('version', $buf->readInt8());
 		} else {
-			// Gosh, who needs this info?!
-			$this->result->addSetting('num_bots', $buf->readInt8());
+			$this->result->addGeneral('bot_players', $buf->readInt8());
 		}
 
 		//$this->result->addSettings('dedicated', $buf->read());
@@ -379,28 +427,14 @@ class Source extends \GameQ3\Protocols {
 		$this->result->addGeneral('secure', ($buf->readInt8() == 1));
 
 		if (!$this->source_engine) {
-			$this->result->addSetting('num_bots', $buf->readInt8());
+			$this->result->addGeneral('bot_players', $buf->readInt8());
 		} else {
-			// The ship (The shit haha)
-			if ($appid == 2400) {
-				// mode
-				$m = $buf->readInt8();
-				switch ($m) {
-					case 0: $ms = "Hunt"; break;
-					case 1: $ms = "Elimination"; break;
-					case 2: $ms = "Duel"; break;
-					case 3: $ms = "Deathmatch"; break;
-					case 4: $ms = "VIP Team"; break;
-					case 5: $ms = "Team Elimination"; break;
-					default: $ms = false;
-				}
-				if ($ms)
-					$this->result->addGeneral('mode', $ms);
-					
-				$this->result->addSetting('the_ship_witnesses', $buf->readInt8());
-				$this->result->addSetting('the_ship_duration', $buf->readInt8());
-			}
+			$this->_parseDetailsExtension($buf, $appid);
+
 			$this->result->addGeneral('version', $buf->readString());
+
+
+			// EDF
 		}
 
 		unset($buf);

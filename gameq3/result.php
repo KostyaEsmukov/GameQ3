@@ -78,12 +78,13 @@ class Result {
 		return true;
 	}
 	
-	public function addPlayer($name, $score=null, $teamid=null, $other=array()) {
+	public function addPlayer($name, $score=null, $teamid=null, $other=array(), $is_bot=false) {
 		if ($this->ign_players) return false;
 		$this->result['players'] []= array(
 			'name' => $name,
 			'score' => $score,
 			'teamid' => $teamid,
+			'is_bot' => $is_bot,
 			'other' => $other
 		);
 		return true;
