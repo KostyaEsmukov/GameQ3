@@ -22,27 +22,31 @@ namespace GameQ3;
 
 class Result {
 	private $result = array();
-	private $ign_settings = true;
-	private $ign_players = true;
-	private $ign_teams = true;
+	private $ignore = array();
+
 	
 	public function __construct($ign) {
 	
 		$this->result['info'] = array();
 		$this->result['general'] = array();
 		
-		if (!isset($ign['settings'])) {
-			$this->result['settings'] = array();
-			$this->ign_settings = false;
+		foreach(array('settings', 'players', 'teams') as $t) {
+			$this->setIgnore($t, isset($ign[$t]) ? $ign[$t] : false);
 		}
-		if (!isset($ign['players'])) {
-			$this->result['players'] = array();
-			$this->ign_players = false;
+	}
+	
+	public function setIgnore($t, $value) {
+		if ($value) {
+			unset($this->result[$t]);
+			$this->ignore[$t] = true;
+		} else {
+			$this->result[$t] = array();
+			$this->ignore[$t] = false;
 		}
-		if (!isset($ign['teams'])) {
-			$this->result['teams'] = array();
-			$this->ign_teams = false;
-		}
+	}
+	
+	private function isIgnored($t) {
+		return (isset($this->ignore[$t]) && $this->ignore[$t]);
 	}
 	
 	public function count($key) {
@@ -50,6 +54,7 @@ class Result {
 	}
 	
 	public function addCustom($zone, $name, $value) {
+		if ($this->isIgnored($zone)) return false;
 		$this->result[$zone][$name] = $value;
 		return true;
 	}
@@ -73,13 +78,13 @@ class Result {
 	}
 	
 	public function addSetting($name, $value) {
-		if ($this->ign_settings) return false;
+		if ($this->isIgnored('settings')) return false;
 		$this->result['settings'] []= array($name, $value);
 		return true;
 	}
 	
 	public function addPlayer($name, $score=null, $teamid=null, $other=array(), $is_bot=false) {
-		if ($this->ign_players) return false;
+		if ($this->isIgnored('players')) return false;
 		$this->result['players'] []= array(
 			'name' => $name,
 			'score' => $score,
@@ -91,7 +96,7 @@ class Result {
 	}
 
 	public function addTeam($teamid, $name, $other = array()) {
-		if ($this->ign_teams) return false;
+		if ($this->isIgnored('teams')) return false;
 		$this->result['teams'][$teamid]= array(
 			'name' => $name,
 			'other' => $other

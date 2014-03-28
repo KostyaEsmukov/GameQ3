@@ -18,7 +18,10 @@
 
 
 namespace GameQ3\protocols;
- 
+
+
+// Players array is unusable, as it consists of "hidden"-0 rows for each player.
+
 class Rust extends \GameQ3\Protocols\Source {
 	protected $name = "rust";
 	protected $name_long = "Rust";
@@ -29,6 +32,9 @@ class Rust extends \GameQ3\Protocols\Source {
 
 	public function init() {
 		$this->forceRequested('settings', false);
+		
+		$this->forceRequested('players', false);
+		$this->result->setIgnore('players', true);
 
 		parent::init();
 	}

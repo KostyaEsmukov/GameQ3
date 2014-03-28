@@ -42,6 +42,7 @@ abstract class Protocols {
 	
 	protected $server_info;
 	private $unst;
+	private $is_not_requested;
 	private $log = null;
 	private $debug = false;
 	private $ping_sum = 0;
@@ -109,6 +110,7 @@ abstract class Protocols {
 		$this->debug = (isset($server_info['debug']) && $server_info['debug']);
 		unset($server_info['debug']);
 		
+		
 		$this->unst = array();
 		if (isset($server_info['unset'])) {
 			if (!is_array($server_info['unset']))
@@ -118,6 +120,9 @@ abstract class Protocols {
 				$this->unst[$unst] = true;
 		}
 		unset($server_info['unset']);
+		
+		$this->is_not_requested = $this->unst;
+		
 		
 		$this->server_info = $server_info;
 		
@@ -301,16 +306,12 @@ abstract class Protocols {
 	}
 
 	final protected function forceRequested($s, $v) {
-		if ($v) {
-			unset($this->unst[$s]);
-		} else {
-			$this->unst[$s] = true;
-		}
+		$this->is_not_requested[$s] = !$v;
 	}
 
 
 	final protected function isRequested($s) {
-		return (!isset($this->unst[$s]));
+		return (!isset($this->is_not_requested[$s]) || !$this->is_not_requested[$s]);
 	}
 
 	final protected function addPing($p) {
