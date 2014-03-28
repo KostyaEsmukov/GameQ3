@@ -803,13 +803,13 @@ class Sockets {
 							$buf = "";
 							$name = "";
 							$port = 0;
-							$res = socket_recvfrom($sock, $buf, $this->socket_buffer, 0 , $name, $port);
+							$res = @socket_recvfrom($sock, $buf, $this->socket_buffer, 0, $name, $port);
 
 							$exception = ($res === false || $res <= 0 || strlen($buf) == 0);
 						} else {
 							$sid = $k;
 							
-							$buf = stream_socket_recvfrom($sock, $this->socket_buffer);
+							$buf = @stream_socket_recvfrom($sock, $this->socket_buffer);
 
 							// In winsock and unix sockets recv() returns empty string when
 							// tcp connection is closed. I hope in this case too...
@@ -817,19 +817,29 @@ class Sockets {
 						}
 						
 						if ($exception) {
-							$this->log->debug("Socket exception. " . $sid);
-
 							// Don't read broken socket.
 							if ($is_udp) {
-								unset($read_udp_sid[$sctn][$sid]);
-								if (empty($read_udp_sid[$sctn])) {
-									unset($read_udp[$sctn]);
+	
+								
+								$this->log->debug("Socket exception. " . $sctn);
+
+								// Socket failed -> all packets, associated with it
+								// in current send loop won't come.
+								
+
+								foreach($read_udp_sid[$sctn] as $sid => $unused) {
+									unset($read_udp_sctn[$sid]);
 								}
-								unset($read_udp_sctn[$sid]);
+
+								unset($read_udp_sid[$sctn]);
+								unset($read_udp[$sctn]);
 								
 								// As it is new socket, there should't be anything to read
 								$this->_createSocketUDP($sctn);
 							} else {
+								
+								$this->log->debug("Socket exception. " . $sid);
+								
 								// Socket will be recreated on next write (if any)
 								unset($this->sockets_stream[$sid]);
 								unset($read_stream[$sid]);
