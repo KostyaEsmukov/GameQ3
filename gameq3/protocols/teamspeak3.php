@@ -189,6 +189,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 			}
 		}
 		
+		$bots_count = 0;
 		foreach($result as $type => $reply) {
 			if ($type === "serverinfo") {
 				foreach($reply[0] as $key => $val) {
@@ -226,8 +227,13 @@ class Teamspeak3 extends \GameQ3\Protocols {
 						$val = $this->filterInt($val);
 					}
 					
-					// cid - channel id. But most probably we will not use that value as we don't use teams, so we don't pass to to teamid
-					$this->result->addPlayer($name, null, null, $player);
+					$is_bot = (isset($player['client_type']) && $player['client_type'] == 1) || (isset($player['client_unique_identifier']) && $player['client_unique_identifier'] == "ServerQuery");
+					
+					if ($is_bot)
+						$bots_count++;
+					
+					// cid - channel id. But most probably we will not use that value as we don't use teams, so we don't pass it to teamid
+					$this->result->addPlayer($name, null, null, $player, $is_bot);
 				}
 			} else
 			if ($type === "channellist") {
@@ -241,6 +247,8 @@ class Teamspeak3 extends \GameQ3\Protocols {
 				}
 			}
 		}
+		
+		$this->result->addGeneral('bot_players', $bots_count);
 
 	}
 
