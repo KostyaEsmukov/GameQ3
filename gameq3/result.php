@@ -83,7 +83,7 @@ class Result {
 		return true;
 	}
 	
-	public function addPlayer($name, $score=null, $teamid=null, $other=array(), $is_bot=false) {
+	public function addPlayer($name, $score=null, $teamid=null, $other=array(), $is_bot=null) {
 		if ($this->isIgnored('players')) return false;
 		$this->result['players'] []= array(
 			'name' => $name,
