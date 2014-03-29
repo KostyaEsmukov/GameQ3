@@ -6,11 +6,6 @@ require __DIR__ . '/../gameq3/gameq3.php';
 // see list.php for all supported games and identifiers.
 $servers = array(
 	array(
-		'id' => 'Minecraft',
-		'type' => 'minecraft',
-		'connect_host' => 'simhost.org',
-	),
-	array(
 		'id' => 'CS 1.6',
 		'type' => 'cs',
 		'connect_host' => 'simhost.org:27015',
@@ -30,9 +25,14 @@ $gq->setFilter('colorize', array(
 	'format' => 'strip'
 ));
 
+$gq->setFilter('strip_badchars');
+
 $gq->setFilter('sortplayers', array(
-	'sortkey' => 'score',
-	'order' => SORT_DESC,
+	'sortkeys' => array(
+		array('key' => 'is_bot', 'order' => 'asc'),
+		array('key' => 'score', 'order' => 'desc'),
+		array('key' => 'name', 'order' => 'asc'),
+	)
 ));
 
 foreach($servers as $server) {

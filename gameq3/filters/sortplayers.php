@@ -21,32 +21,80 @@
 namespace GameQ3\filters;
  
 class Sortplayers {
+
+	const DEFAULT_ORDER = 'asc';
  
-	// add html support
 	public static function filter(&$data, $args) {
-		if (empty($data['players'])) return;
-		if (!isset($args['sortkey'])) return;
+		if (empty($data['players']))
+			return;
+
+		$sortkeys = array(
+			array('key' => 'name', 'order' => 'asc')
+		);
+		if (isset($args['sortkeys'])) {
+			$sortkeys = $args['sortkeys'];
+		} else 
+		if (isset($args['sortkey'])) {
+			$sortkeys = array('key' => $args['sortkey'], 'order' => isset($args['order']) ? $args['order'] : self::DEFAULT_ORDER);
+		}
+
+
+		$s = array();
+		foreach($sortkeys as $k) {
+			$r = new \stdClass();
+
+			if (!isset($k['key']))
+				continue;
+
+			$r->key = $k['key'];
+
+			if (!isset($k['order']))
+				$k['order'] = self::DEFAULT_ORDER;
+
+			$k['order'] = ($k['order'] == 'asc') || ($k['order'] == \SORT_ASC);
+
+			$r->order = $k['order'];
+
+			$s []= $r;
+		}
+		$sortkeys = $s;
+		unset($s);
 		
-		$sortkey = (isset($args['sortkey']) ? $args['sortkey'] : 'name');
-		$sortdirection = (isset($args['order']) ? ($args['order'] == 'asc') || ($args['order'] == SORT_ASC) : false);
-		
-		
-		uasort($data['players'], function($a, $b) use($sortkey, $sortdirection) {
-			if (!isset($a[$sortkey]) || !isset($b[$sortkey])) {
-				if (!isset($a['other'][$sortkey]) || !isset($b['other'][$sortkey])) {
-					return false;
+		uasort($data['players'], function($a, $b) use($sortkeys) {
+
+			foreach($sortkeys as $k) {
+				if (isset($a[$k->key]) && isset($b[$k->key]) && !is_array($a[$k->key]) && !is_array($b[$k->key])) {
+					$ca = $a[$k->key];
+					$cb = $b[$k->key];
+				} else
+				if (isset($a['other'][$k->key]) && isset($b['other'][$k->key]) && !is_array($a['other'][$k->key]) && !is_array($b['other'][$k->key])) {
+					$ca = $a['other'][$k->key];
+					$cb = $b['other'][$k->key];
 				} else {
-					$t1 = $a['other'][$sortkey];
-					$t2 = $b['other'][$sortkey];
+					continue;
 				}
-			} else {
-				$t1 = $a[$sortkey];
-				$t2 = $b[$sortkey];
+
+				if (is_string($ca) || is_string($cb)) {
+					$res = strcasecmp("" . $ca, "" . $cb);
+
+					if ($res == 0)
+						continue;
+
+					$res = $res < 0;
+				} else {
+					if ($ca === $cb)
+						continue;
+
+					$res = $ca < $cb;
+				}
+
+				if (!$k->order)
+					$res = !$res;
+
+				return ($res ? -1 : 1);
 			}
-			if ($t1 === $t2) return 0;
-			$b = is_string($t1) || is_string($t2) ? strcasecmp($t1, $t2) < 0 : ($t1 < $t2);
-			$b = $sortdirection ? $b : !$b;
-			return ($b ? -1 : 1);
+
+			return 0;
 		});
 	}
 	

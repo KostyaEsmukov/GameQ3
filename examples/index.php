@@ -25,9 +25,14 @@ $gq->setFilter('colorize', array(
 	'format' => 'strip'
 ));
 
+$gq->setFilter('strip_badchars');
+
 $gq->setFilter('sortplayers', array(
-	'sortkey' => 'score',
-	'order' => SORT_DESC,
+	'sortkeys' => array(
+		array('key' => 'is_bot', 'order' => 'asc'),
+		array('key' => 'score', 'order' => 'desc'),
+		array('key' => 'name', 'order' => 'asc'),
+	)
 ));
 
 foreach($servers as $server) {
