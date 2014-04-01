@@ -32,6 +32,9 @@ class Tshock extends \GameQ3\Protocols {
 	protected $url = "/v2/server/status?players=true&rules=true";
 	
 	public function init() {
+		if ($this->isRequested('teams'))
+			$this->result->setIgnore('teams', false);
+
 		$this->queue('status', 'http', $this->url);
 	}
 	

@@ -130,7 +130,9 @@ abstract class Protocols {
 		unset($server_info['unset']);
 		
 		$this->is_not_requested = $this->unst;
-		
+
+		if (!isset($this->unst['teams']))
+			$this->unst['teams'] = true; // Unset teams by default
 		
 		$this->server_info = $server_info;
 		

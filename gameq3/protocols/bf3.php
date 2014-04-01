@@ -46,6 +46,9 @@ class Bf3 extends \GameQ3\Protocols {
 	
 	
 	public function init() {
+		if ($this->isRequested('teams'))
+			$this->result->setIgnore('teams', false);
+
 		$this->queue('status', 'tcp', $this->packets['status']);
 		$this->queue('version', 'tcp', $this->packets['version']);
 		if ($this->isRequested('players')) $this->queue('players', 'tcp', $this->packets['players']);

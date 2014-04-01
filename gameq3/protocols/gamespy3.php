@@ -70,6 +70,9 @@ class Gamespy3 extends \GameQ3\Protocols {
 	protected $full;
 	
 	public function init() {
+		if ($this->isRequested('teams'))
+			$this->result->setIgnore('teams', false);
+
 		if ($this->challenge) {
 			$this->queue('all', 'udp', $this->packets['challenge'], array('response_count' => 1));
 			$this->stage = 'challenge';

@@ -62,6 +62,9 @@ class Gamespy extends \GameQ3\Protocols {
 	protected $teams;
 	
 	public function init() {
+		if ($this->isRequested('teams'))
+			$this->result->setIgnore('teams', false);
+
 		$this->queue('all', 'udp', $this->packets['all']);
 		
 		/*

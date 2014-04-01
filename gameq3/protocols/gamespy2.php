@@ -37,6 +37,9 @@ class Gamespy2 extends \GameQ3\Protocols {
 
 	
 	public function init() {
+		if ($this->isRequested('teams'))
+			$this->result->setIgnore('teams', false);
+
 		$this->queue('details', 'udp', $this->packets['details'], array('response_count' => 1));
 		if ($this->isRequested('players'))
 			$this->queue('players', 'udp', $this->packets['players'], array('response_count' => 1));
