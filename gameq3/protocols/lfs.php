@@ -23,6 +23,8 @@ namespace GameQ3\protocols;
 // This class was created as an example of preFetch() usage, but... It works just fine.
 // Don't forget to apply colorize filter to strip spans from hostname.
  
+use GameQ3\UserException;
+
 class Lfs extends \GameQ3\Protocols {
 	protected $protocol = 'lfs';
 	protected $name = 'lfs';
@@ -38,7 +40,7 @@ class Lfs extends \GameQ3\Protocols {
 
 	protected function construct() {
 		if (!isset($this->server_info['hostname']))
-			throw new \GameQ3\UserException("Hostname must be set for lfs protocol");
+			throw new UserException("Hostname must be set for lfs protocol");
 			
 		$this->url = sprintf($this->url, urlencode($this->server_info['hostname']));
 	}

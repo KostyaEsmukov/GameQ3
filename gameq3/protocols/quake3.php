@@ -20,6 +20,8 @@
 
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Quake3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -44,7 +46,7 @@ class Quake3 extends \GameQ3\Protocols {
 	}
 
 	protected function _process_status($packets) {
-		$buf = new \GameQ3\Buffer($packets[0]);
+		$buf = new Buffer($packets[0]);
 
 		// Grab the header
 		$header = $buf->read(20);
@@ -62,7 +64,7 @@ class Quake3 extends \GameQ3\Protocols {
 		unset($buf);
 
 		// Make a new buffer for the server info
-		$buf_server = new \GameQ3\Buffer($server_info);
+		$buf_server = new Buffer($server_info);
 
 		$private_players = false;
 		$max_players = false;
@@ -111,7 +113,7 @@ class Quake3 extends \GameQ3\Protocols {
 
 		// Loop the players
 		foreach($players AS $player_info) {
-			$buf = new \GameQ3\Buffer($player_info);
+			$buf = new Buffer($player_info);
 
 			$score = $this->filterInt($buf->readString("\x20"));
 			$ping = $this->filterInt($buf->readString("\x20"));

@@ -69,10 +69,11 @@ class GameQ3 {
 	public function setLogLevel($error, $warning = true, $debug = false, $trace = false) {
 		$this->log->setLogLevel($error, $warning, $debug, $trace);
 	}
-	
+
 	/**
 	 * Set logger function.
 	 * @param callable $callback function($msg)
+	 * @throws UserException
 	 */
 	public function setLogger($callback) {
 		if (is_callable($callback))
@@ -110,7 +111,7 @@ class GameQ3 {
 	 * Set option. See readme for a list of options.
 	 * @param string $key
 	 * @param mixed $value
-	 * @throws \GameQ3\UserException
+	 * @throws UserException
 	 */
 	public function setOption($key, $value) {
 		if ($this->started)
@@ -130,7 +131,7 @@ class GameQ3 {
 	 * Set filter. See readme for a list of filters
 	 * @param string $name Filter name
 	 * @param array $args Filter options
-	 * @throws \GameQ3\UserException
+	 * @throws UserException
 	 */
 	public function setFilter($name, $args = array()) {
 		if ($this->started)
@@ -145,7 +146,7 @@ class GameQ3 {
 	/**
 	 * Unset filter.
 	 * @param string $name Filter name
-	 * @throws \GameQ3\UserException
+	 * @throws UserException
 	 */
 	public function unsetFilter($name) {
 		if ($this->started)
@@ -153,10 +154,11 @@ class GameQ3 {
 
 		unset($this->filters[$name]);
 	}
-	
+
 	/**
 	 * Returns information about protocol.
 	 * @param string $protocol
+	 * @throws UserException
 	 * @return array
 	 */
 	public function getProtocolInfo($protocol) {
@@ -168,7 +170,7 @@ class GameQ3 {
 		$reflection = new \ReflectionClass($className);
 		
 		if(!$reflection->IsInstantiable()) {
-			continue;
+			return false;
 		}
 		
 		$dp = $reflection->getDefaultProperties();
@@ -226,8 +228,11 @@ class GameQ3 {
 			}
 			
 			$protocol = pathinfo($entry, PATHINFO_FILENAME);
-			
-			$protocols[strtolower($protocol)] = $this->getProtocolInfo($protocol);
+
+			$res = $this->getProtocolInfo($protocol);
+
+			if (!empty($res))
+				$protocols[strtolower($protocol)] = $res;
 		}
 		
 		unset($dir);
@@ -240,7 +245,7 @@ class GameQ3 {
 	/**
 	 * Add a server to be queried
 	 * @param array $server_info
-	 * @throws \GameQ3\UserException
+	 * @throws UserException
 	 */
 	public function addServer($server_info) {
 		if ($this->started)
@@ -290,8 +295,8 @@ class GameQ3 {
 	
 	/**
 	 * Unset server from list of serers to query
-	 * @param $id Server id
-	 * @throws \GameQ3\UserException
+	 * @param string $id Server id
+	 * @throws UserException
 	 */
 	public function unsetServer($id) {
 		if ($this->started)

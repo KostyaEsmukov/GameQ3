@@ -43,11 +43,19 @@ abstract class Protocols {
 	protected $server_info;
 	private $unst;
 	private $is_not_requested;
+
+	/**
+	 * @var Log
+	 */
 	private $log = null;
 	private $debug = false;
 	private $ping_sum = 0;
 	private $ping_cnt = 0;
 	private $retry_cnt = 0;
+
+	/**
+	 * @var Result
+	 */
 	protected $result;
 	private $queue = array();
 	private $queue_check = array();

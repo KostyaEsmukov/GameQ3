@@ -19,11 +19,13 @@
 
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Ship extends \GameQ3\Protocols\Source {
 	protected $name = "ship";
 	protected $name_long = "The Ship";
 
-	protected function _parseDetailsExtension(&$buf, $appid) {
+	protected function _parseDetailsExtension(Buffer &$buf, $appid) {
 		if ($appid == 2400) {
 			// mode
 			$m = $buf->readInt8();

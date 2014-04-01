@@ -23,7 +23,7 @@
  *
  * @author		 Aidan Lister <aidan@php.net>
  * @author		 Tom Buskens <t.buskens@deviation.nl>
- * @version		$Revision: 1.4 $
+ * @author		 Kostya Esmukov <kostya.shift@gmail.com>
  */
  
  
@@ -34,15 +34,15 @@ class Buffer {
 	 * The original data
 	 *
 	 * @var		string
-	 * @access	 public
+	 * @access	 private
 	 */
 	private $data;
 
 	/**
-	 * The original data
+	 * The original data length
 	 *
-	 * @var		string
-	 * @access	 public
+	 * @var		int
+	 * @access	 private
 	 */
 	private $length;
 
@@ -51,7 +51,7 @@ class Buffer {
 	 * Position of pointer
 	 *
 	 * @var		string
-	 * @access	 public
+	 * @access	 private
 	 */
 	private $index = 0;
 
@@ -59,7 +59,7 @@ class Buffer {
 	/**
 	 * Constructor
 	 *
-	 * @param   string|array	$response   The data
+	 * @param   (string|array)	$response   The data
 	 */
 	public function __construct($data) {
 		$this->data   = $data;
@@ -96,10 +96,11 @@ class Buffer {
 	/**
 	 * Read from the buffer
 	 *
-	 * @param   int			 $length	 Length of data to read
-	 * @return  string		  The data read
+	 * @param   int $length Length of data to read
+	 * @throws \Exception
+	 * @return  string          The data read
 	 */
-	public function read($length = 1) {
+	public function read($length=1) {
 		if (($length + $this->index) > $this->length) {
 			throw new \Exception('length OOB');
 		}
@@ -133,7 +134,7 @@ class Buffer {
 	 * @param   int			 $length	 Length of data to read
 	 * @return  string		  The data read
 	 */
-	public function lookAhead($length = 1) {
+	public function lookAhead($length=1) {
 		$string = substr($this->data, $this->index, $length);
 
 		return $string;
@@ -145,7 +146,7 @@ class Buffer {
 	 * @param   int			 $length	 Length of data to skip
 	 * @return  void
 	 */
-	public function skip($length = 1) {
+	public function skip($length=1) {
 		$this->index += $length;
 	}
 
@@ -177,7 +178,7 @@ class Buffer {
 	 * @param   string		  $delim	  Read until this character is reached
 	 * @return  string		  The data read
 	 */
-	public function readString($delim = "\x00") {
+	public function readString($delim="\x00") {
 		// Get position of delimiter
 		$len = strpos($this->data, $delim, min($this->index, $this->length));
 
@@ -196,12 +197,12 @@ class Buffer {
 	/**
 	 * Reads a pascal string from the buffer
 	 *
-	 * @paran   int	$offset		Number of bits to cut off the end
+	 * @param   int	$offset		Number of bits to cut off the end
 	 * @param   bool   $read_offset   True if the data after the offset is
 	 *								to be read
 	 * @return  string		  The data read
 	 */
-	public function readPascalString($offset = 0, $read_offset = false) {
+	public function readPascalString($offset=0, $read_offset = false) {
 		// Get the proper offset
 		$len = $this->readInt8();
 		$offset = max($len - $offset, 0);
@@ -220,10 +221,11 @@ class Buffer {
 	 *
 	 * If not found, return everything
 	 *
-	 * @param   array		   $delims	  Read until these characters are reached
-	 * @return  string		  The data read
+	 * @param   array $delims Read until these characters are reached
+	 * @param string $delimfound
+	 * @return  string          The data read
 	 */
-	public function readStringMulti($delims, &$delimfound = null) {
+	public function readStringMulti($delims, &$delimfound=null) {
 		// Get position of delimiters
 		$pos = array();
 		foreach ($delims as $delim) {

@@ -20,6 +20,8 @@
  
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Unreal2 extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -61,7 +63,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	
 
-	protected function _readBadPascalString(\GameQ3\Buffer &$buf) {
+	protected function _readBadPascalString(Buffer &$buf) {
 		$len = $buf->readInt8();
 		
 		$bufpos = $buf->getPosition();
@@ -83,7 +85,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	This works for hostname, but they count length differently! sometimes they include nullchar and sometimes they dont.
 	Fuck you unreal2, gonna use dumb readString method provided above.
 	
-	protected function _readColoredPascalString(\GameQ3\Buffer &$buf) {
+	protected function _readColoredPascalString(Buffer &$buf) {
 		$len = $buf->readInt8();
 		$str = "";
 		
@@ -117,7 +119,7 @@ class Unreal2 extends \GameQ3\Protocols {
 		return iconv("UCS-2//IGNORE", "UTF-8", $str);
 	}
 	
-	protected function _readUnrealString(\GameQ3\Buffer &$buf) {
+	protected function _readUnrealString(Buffer &$buf) {
 		// Normal pascal string
 		if (ord($buf->lookAhead(1)) < 129) {
 			$str = $buf->readPascalString(1);
@@ -139,7 +141,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_status($packets) {
-		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
+		$buf = new Buffer($this->_preparePackets($packets));
 		
 		//$this->p->strReplace("\xa0", "\x20");
 		// serverid
@@ -178,7 +180,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_players($packets) {
-		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
+		$buf = new Buffer($this->_preparePackets($packets));
 		
 		
 		while ($buf->getLength()) {
@@ -198,7 +200,7 @@ class Unreal2 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_rules($packets) {
-		$buf = new \GameQ3\Buffer($this->_preparePackets($packets));
+		$buf = new Buffer($this->_preparePackets($packets));
 		
 		
 		while ($buf->getLength()) {

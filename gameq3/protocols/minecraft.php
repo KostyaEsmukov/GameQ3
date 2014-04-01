@@ -20,6 +20,8 @@
 
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Minecraft extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -48,8 +50,8 @@ class Minecraft extends \GameQ3\Protocols {
 	protected function _process_status($packets) {
 		// http://www.wiki.vg/Server_List_Ping
 		// https://gist.github.com/barneygale/1209061
-		
-		$buf = new \GameQ3\Buffer($packets[0]);
+
+		$buf = new Buffer($packets[0]);
 		
 		if ($buf->read(1) !== "\xFF") {
 			$this->debug("Wrong header");

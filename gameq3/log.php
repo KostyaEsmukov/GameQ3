@@ -64,10 +64,6 @@ class Log {
 		if (!$this->trace && !$force) return;
 		
 		$trace_limit = $this->trace ? self::TRACE_LIMIT : self::FORCE_TRACE_LIMIT;
-		
-		//  Save some memory in modern versions
-		// http://php.net/manual/ru/function.debug-backtrace.php
-		$php_version = phpversion();
 
 		$trace = debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS, ($trace_limit + $trace_skip + self::TRACE_IGNORE));
 		

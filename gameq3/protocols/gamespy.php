@@ -58,7 +58,8 @@ class Gamespy extends \GameQ3\Protocols {
 	protected $name_long = "Gamespy";
 	
 	protected $ports_type = self::PT_UNKNOWN;
-	
+
+	protected $teams;
 	
 	public function init() {
 		$this->queue('all', 'udp', $this->packets['all']);
@@ -75,11 +76,6 @@ class Gamespy extends \GameQ3\Protocols {
 		if ($qid === 'all') {
 			return $this->_process_all($requests['responses']);
 		}
-		/*
-		else {
-			var_dump($requests['responses']);
-		}
-		*/
 	}
 	
 	protected function _put_var($key, $val) {

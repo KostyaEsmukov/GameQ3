@@ -23,6 +23,9 @@ namespace GameQ3\protocols;
 // TS3 lets us send 30 queries in a minute and then bans as for 600 seconds.
 // Great reference: http://media.teamspeak.com/ts3_literature/TeamSpeak%203%20Server%20Query%20Manual.pdf
  
+use GameQ3\Buffer;
+use GameQ3\UserException;
+
 class Teamspeak3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -79,6 +82,9 @@ class Teamspeak3 extends \GameQ3\Protocols {
 		"\t",
 		"\v",
 	);
+
+	protected $packet;
+	protected $reply_format;
 	
 	protected function construct() {
 		// Make packet that we will send every time
@@ -141,7 +147,8 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	
 	protected function _process_r($packets) {
 		$packet_data = implode("", $packets);
-		$buf = new \GameQ3\Buffer($packet_data);
+		$buf = new Buffer($packet_data);
+
 		unset($packets);
 		
 		$result = array();

@@ -21,6 +21,9 @@
 namespace GameQ3;
 
 class Sockets {
+	/**
+	 * @var Log
+	 */
 	private $log = null;
 	
 	/*
@@ -123,7 +126,7 @@ class Sockets {
 			case 'curl_options':
 				if ($set) {
 					if (is_array($value))
-						foreach($val as $opt => $val) {
+						foreach($value as $opt => $val) {
 							$this->$key[$opt] = $val;
 						}
 					else
@@ -255,7 +258,7 @@ class Sockets {
 		// This should never happen
 		if (!isset($this->sockets_stream_data[$sid])) {
 			if ($throw) {
-				throw new GameQ_SocketsException("Cannot create stream socket");
+				throw new SocketsException("Cannot create stream socket");
 			} else {
 				$this->log->debug("Cannot create stream socket");
 				return false;
@@ -270,13 +273,15 @@ class Sockets {
 		$proto = $this->sockets_stream_data[$sid]['pr'];
 		$data = $this->sockets_stream_data[$sid]['d'];
 		$port = $this->sockets_stream_data[$sid]['p'];
-		
-		// proto is already filtered here
+
 		if ($proto == 'tcp') {
 			$remote_addr = $proto . '://' . $data . ':' . $port;
 		} else
 		if ($proto == 'unix' || $proto = 'udg') {
 			$remote_addr = $proto . '://' . $data;
+		} else {
+			$this->log->debug("Unsupported stream protocol");
+			return false;
 		}
 
 		$errno = null;
@@ -323,9 +328,8 @@ class Sockets {
 	}
 	
 	private function _createCurlHandle($sid, $url, $curl_opts, $return_headers) {
-		$ch = curl_init();
-		if ($ch == false)
-			throw new SocketsException("Cannot init curl (" . curl_errno() . ") " . curl_error());
+		if (!function_exists("curl_init") || ($ch = curl_init()) == false)
+			throw new SocketsException("Cannot init curl");
 			
 		// http://stackoverflow.com/questions/9062798/php-curl-timeout-is-not-working
 		if (!defined('CURLOPT_CONNECTTIMEOUT_MS')) define('CURLOPT_CONNECTTIMEOUT_MS', 156);
@@ -407,7 +411,7 @@ class Sockets {
 			usleep($this->usleep_stream);
 		}
 		
-		if ($er) {
+		if (isset($er) && $er) {
 			// Second fail. Very strange situation. Do not enter recursion, just return false for this packet.
 			if ($retry) return false;
 			if ($this->_createSocketStream($sid)) {
@@ -430,6 +434,8 @@ class Sockets {
 			
 		$proto = $queue_opts['transport'];
 		$packs = $queue_opts['packets'];
+		$domain_str = "";
+		$domain = false;
 
 		if ($proto === 'udp' || $proto === 'tcp' || $proto === 'http') {
 			if (empty($queue_opts['addr']) || !is_string($queue_opts['addr']))
@@ -728,10 +734,14 @@ class Sockets {
 
 			if (!$r) {
 				// don't read failed socket
-				if ($is_udp && (!isset($this->sockets_udp[$sctn]) || !is_resource($this->sockets_udp[$sctn]))) {
-					if (isset($this->sockets_udp_send[$sid]['s']))
-						unset($read_udp[ $this->sockets_udp_send[$sid]['s'] ]);
+				if ($is_udp && isset($this->sockets_udp_send[$sid])) {
+					$sctn = $this->sockets_udp_send[$sid]['s'];
+
+					if (!isset($this->sockets_udp[$sctn]) || !is_resource($this->sockets_udp[$sctn])) {
+						unset($read_udp[$sctn]);
+					}
 				}
+
 				continue;
 			}
 			
@@ -1069,7 +1079,7 @@ class Sockets {
 			if (!$active || $mrc !== CURLM_OK) {
 				$this->curl_running = false; // Done or error occured
 				if ($mrc !== CURLM_OK) {
-					$this->log->debug("Curl stack error (" . $mrc . ") " . curl_error());
+					$this->log->debug("Curl stack error (" . $mrc . ") " . curl_multi_strerror($mrc));
 				}
 				break;
 			}

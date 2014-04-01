@@ -40,6 +40,8 @@ if ($result['info']['online'] == true) {
 }
 */
 
+use GameQ3\Buffer;
+
 class Gamespy3 extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -63,6 +65,9 @@ class Gamespy3 extends \GameQ3\Protocols {
 	
 	protected $challenge = true;
 	protected $stage = null;
+
+	protected $settings;
+	protected $full;
 	
 	public function init() {
 		if ($this->challenge) {
@@ -86,7 +91,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_challenge($packets) {
-		$buf = new \GameQ3\Buffer($packets[0]);
+		$buf = new Buffer($packets[0]);
 		
 		$buf->skip(5);
 		$challenge = intval($buf->readString());
@@ -111,7 +116,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 		// Get packet index, remove header
 		foreach ($packets as $index => $packet) {
 			// Make new buffer
-			$buf = new \GameQ3\Buffer($packet);
+			$buf = new Buffer($packet);
 
 			// Skip the header
 			if ($buf->read(1) !== "\x00") {
@@ -189,7 +194,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 	}
 	
 	// Ut3, Bf2142
-	protected function _parse_rules_break(&$buf) {
+	protected function _parse_rules_break(Buffer &$buf) {
 		// Sections start with \x01-\x02 
 		$la = ord($buf->lookAhead(1));
 		if ($la === 0) {
@@ -200,7 +205,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 		return false;
 	}
 	
-	protected function _parse_arrays_break(&$buf) {
+	protected function _parse_arrays_break(Buffer &$buf) {
 		return true;
 	}
 	
@@ -226,7 +231,7 @@ class Gamespy3 extends \GameQ3\Protocols {
 		$this->full = true;
 		$fields = array();
 		foreach($packets as $data) { // Loop thru packets
-			$buf = new \GameQ3\Buffer($data);
+			$buf = new Buffer($data);
 			while ($buf->getLength()) { // Loop thru sections
 				$section_num = $buf->readInt8();
 
@@ -323,9 +328,9 @@ class Gamespy3 extends \GameQ3\Protocols {
 		$cnt = false;
 		$fields = array();
 		$fields_truncated = array();
-		if ($task === 'players') {
-			$bot_players = 0;
-		}
+
+		$bot_players = 0;
+
 		foreach($data as $field => &$arr) {
 		/*
 			It's OK for UT3 to send something like that:
@@ -350,7 +355,11 @@ class Gamespy3 extends \GameQ3\Protocols {
 					continue;
 				}
 				$field_name = substr($field, 0, -2);
+			} else {
+				$this->debug("Bad task");
+				return false;
 			}
+
 			$fields[$field_name]= $field;
 			if ($cnt == false) {
 				$cnt = count($arr);

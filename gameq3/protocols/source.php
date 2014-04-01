@@ -20,6 +20,8 @@
  
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Source extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -39,6 +41,8 @@ class Source extends \GameQ3\Protocols {
 	protected $connect_string = 'steam://connect/{IP}:{PORT}';
 	
 	protected $source_engine = true;
+
+	protected $appid = null;
 	
 
 	public function init() {
@@ -65,7 +69,7 @@ class Source extends \GameQ3\Protocols {
 	
 	
 	protected function _process_challenge($packets) {
-		$buf = new \GameQ3\Buffer($packets[0]);
+		$buf = new Buffer($packets[0]);
 		$head = $buf->read(4);
 		
 		if ($head !== "\xFF\xFF\xFF\xFF") {
@@ -85,7 +89,7 @@ class Source extends \GameQ3\Protocols {
 	
 	
 	protected function _preparePackets($packets) {
-		$buffer = new \GameQ3\Buffer($packets[0]);
+		$buffer = new Buffer($packets[0]);
 
 		// First we need to see if the packet is split
 		// -2 = split packets
@@ -106,7 +110,7 @@ class Source extends \GameQ3\Protocols {
 		// We have multiple packets so we need to get them and order them
 		foreach($packets as $packet) {
 			// Make a buffer so we can read this info
-			$buffer = new \GameQ3\Buffer($packet);
+			$buffer = new Buffer($packet);
 
 			// Pull some info
 			$packet_type = $buffer->readInt32Signed();
@@ -172,8 +176,7 @@ class Source extends \GameQ3\Protocols {
 		
 		if (!$packet) return false;
 
-		// Create a new buffer
-		$buf = new \GameQ3\Buffer($packet);
+		$buf = new Buffer($packet);
 
 		$header = $buf->read(5);
 		if($header !== "\xFF\xFF\xFF\xFF\x44") {
@@ -253,7 +256,7 @@ class Source extends \GameQ3\Protocols {
 	}
 
 	protected function _parse_rules(&$packet) {
-		$buf = new \GameQ3\Buffer($packet);
+		$buf = new Buffer($packet);
 
 		$header = $buf->read(5);
 		if($header !== "\xFF\xFF\xFF\xFF\x45") {
@@ -319,7 +322,7 @@ class Source extends \GameQ3\Protocols {
 		// Goldsource sends two packets - oldstyle and newstyle. We don't care what type to use
 		$data = $packets[0];
 
-		$buf = new \GameQ3\Buffer($data);
+		$buf = new Buffer($data);
 
 		$head = $buf->read(4);
 		
@@ -366,10 +369,10 @@ class Source extends \GameQ3\Protocols {
 
 		// Check engine type
 		if ($this->source_engine) {
-			$appid = $buf->readInt16();
-			$this->result->addInfo('app_id', $appid);
+			$this->appid = $buf->readInt16();
+			$this->result->addInfo('app_id', $this->appid);
 
-			$this->_detectMode($game_description, $appid);
+			$this->_detectMode($game_description, $this->appid);
 		}
 
 		$this->result->addGeneral('num_players', $buf->readInt8());
@@ -429,7 +432,7 @@ class Source extends \GameQ3\Protocols {
 		if (!$this->source_engine) {
 			$this->result->addGeneral('bot_players', $buf->readInt8());
 		} else {
-			$this->_parseDetailsExtension($buf, $appid);
+			$this->_parseDetailsExtension($buf, $this->appid);
 
 			$this->result->addGeneral('version', $buf->readString());
 

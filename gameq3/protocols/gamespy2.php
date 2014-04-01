@@ -20,6 +20,8 @@
 
 namespace GameQ3\protocols;
  
+use GameQ3\Buffer;
+
 class Gamespy2 extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -78,7 +80,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_details($packets) {
-		$buf = new \GameQ3\Buffer($packets[0]);
+		$buf = new Buffer($packets[0]);
 		
 		// Make sure the data is formatted properly
 		if($buf->lookAhead(5) != "\x00\x43\x4F\x52\x59") {
@@ -109,7 +111,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 	}
 	
 	protected function _process_players($packets) {
-		$buf = new \GameQ3\Buffer($packets[0]);
+		$buf = new Buffer($packets[0]);
 		
 		// Make sure the data is formatted properly
 		if($buf->lookAhead(6) != "\x00\x43\x4F\x52\x59\x00") {
@@ -137,7 +139,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 		return $res;
 	}
 	
-	protected function _parse_playerteam($type, \GameQ3\Buffer &$buf) {
+	protected function _parse_playerteam($type, Buffer &$buf) {
 		$count = $buf->readInt8();
 		if ($type === 'players')
 			$this->result->addGeneral('num_players', $count);

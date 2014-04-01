@@ -19,6 +19,8 @@
  */
 
 namespace GameQ3\protocols;
+
+use GameQ3\Buffer;
  
 class Bf3 extends \GameQ3\Protocols {
 
@@ -62,7 +64,7 @@ class Bf3 extends \GameQ3\Protocols {
 	}
 	
 	protected function _preparePackets($packets) {
-		$buf = new \GameQ3\Buffer(implode('', $packets));
+		$buf = new Buffer(implode('', $packets));
 		
 		$buf->skip(8); /* skip header */
 		

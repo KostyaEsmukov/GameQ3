@@ -35,6 +35,8 @@ if ($result['info']['online'] == true) {
 }
 */
  
+use GameQ3\Buffer;
+
 class Samp extends \GameQ3\Protocols {
 
 	protected $packets = array(
@@ -96,7 +98,7 @@ class Samp extends \GameQ3\Protocols {
 	
 	protected function _preparePackets($packets) {
 		// Make buffer so we can check this out
-		$buf = new \GameQ3\Buffer(implode('', $packets));
+		$buf = new Buffer(implode('', $packets));
 
 		// Grab the header
 		$header = $buf->read(11);
