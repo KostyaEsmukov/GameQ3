@@ -47,7 +47,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	protected $connect_port = 9987;
 	protected $query_port = 10011;
 	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_FIXED;
-	protected $connect_string = 'ts3server://{IP}?port={PORT}'; // &nickname= . Nickname defaults to Player.
+	protected $connect_string = 'ts3server://{CONNECT_ADDR}?port={CONNECT_PORT}'; // &nickname= . Nickname defaults to Player.
 	
 	protected $protocol = 'teamspeak3';
 	protected $name = 'teamspeak3';

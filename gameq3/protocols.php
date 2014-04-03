@@ -287,18 +287,39 @@ abstract class Protocols {
 	}
 	
 	final protected function getConnectString() {
-		if (!is_string($this->connect_string)) return null;
-		return $this->genConnectString();
+		$res = $this->genConnectString();
+		
+		if (!is_string($res))
+			return null;
+			
+		return $res;
 	}
 	
 	protected function genConnectString() {
-		if (!is_int($this->connect_port)) return false;
-		return str_replace(array('{IP}', '{PORT}'), array($this->connect_addr, $this->connect_port), $this->connect_string);
+		if (!is_string($this->connect_string) || !is_int($this->connect_port))
+			return false;
+
+		return str_replace(
+			array(
+				'{CONNECT_PORT}',
+				'{CONNECT_ADDR}',
+				'{IDENTIFIER}'
+			),
+			array(
+				$this->connect_port,
+				$this->connect_addr,
+				$this->getIdentifier()
+			),
+			$this->connect_string
+		);
 	}
 	
 	// Human-readable string that identifies servers.
 	protected function getIdentifier() {
-		if (!$this->network) return false;
+		if (!$this->network) {
+			$this->error("function getIdentifier must always be overloaded in non-network protocols");
+			return false;
+		}
 		return $this->connect_addr . ':' . $this->connect_port;
 	}
 
