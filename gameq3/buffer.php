@@ -31,7 +31,7 @@ namespace GameQ3;
  
 class Buffer {
 	/**
-	 * The original data
+	 * The original data. Immutable
 	 *
 	 * @var		string
 	 * @access	 private
@@ -50,7 +50,7 @@ class Buffer {
 	/**
 	 * Position of pointer
 	 *
-	 * @var		string
+	 * @var		int
 	 * @access	 private
 	 */
 	private $index = 0;
@@ -112,30 +112,17 @@ class Buffer {
 	}
 
 	/**
-	 * Read the last character from the buffer
-	 *
-	 * Unlike the other read functions, this function actually removes
-	 * the character from the buffer.
-	 *
-	 * @return  string		  The data read
-	 */
-	public function readLast() {
-		$len		   = strlen($this->data);
-		$string		= $this->data{strlen($this->data) - 1};
-		$this->data	= substr($this->data, 0, $len - 1);
-		$this->length -= 1;
-
-		return $string;
-	}
-
-	/**
 	 * Look at the buffer, but don't remove
 	 *
 	 * @param   int			 $length	 Length of data to read
 	 * @return  string		  The data read
 	 */
 	public function lookAhead($length=1) {
-		$string = substr($this->data, $this->index, $length);
+		if ($length < 0) {
+			$string = substr($this->data, $this->length + $length);
+		} else {
+			$string = substr($this->data, $this->index, $length);
+		}
 
 		return $string;
 	}
@@ -144,10 +131,9 @@ class Buffer {
 	 * Skip forward in the buffer
 	 *
 	 * @param   int			 $length	 Length of data to skip
-	 * @return  void
 	 */
 	public function skip($length=1) {
-		$this->index += $length;
+		$this->jumpto($this->length + $length);
 	}
 
 	/**
@@ -155,7 +141,6 @@ class Buffer {
 	 * will not jump past end of buffer
 	 *
 	 * @param   int   $index  Position to go to
-	 * @return  void
 	 */
 	public function jumpto($index) {
 		$this->index = min($index, $this->length - 1);
@@ -180,16 +165,16 @@ class Buffer {
 	 */
 	public function readString($delim="\x00") {
 		// Get position of delimiter
-		$len = strpos($this->data, $delim, min($this->index, $this->length));
+		$len = strpos($this->data, $delim, $this->index);
 
 		// If it is not found then return whole buffer
 		if ($len === false) {
-			return $this->read(strlen($this->data) - $this->index);
+			return $this->read($this->length - $this->index);
 		}
 
 		// Read the string and remove the delimiter
 		$string = $this->read($len - $this->index);
-		++$this->index;
+		$this->skip(1);
 
 		return $string;
 	}
@@ -202,7 +187,7 @@ class Buffer {
 	 *								to be read
 	 * @return  string		  The data read
 	 */
-	public function readPascalString($offset=0, $read_offset = false) {
+	public function readPascalString($offset=0, $read_offset=false) {
 		// Get the proper offset
 		$len = $this->readInt8();
 		$offset = max($len - $offset, 0);
@@ -229,14 +214,14 @@ class Buffer {
 		// Get position of delimiters
 		$pos = array();
 		foreach ($delims as $delim) {
-			if ($p = strpos($this->data, $delim, min($this->index, $this->length))) {
+			if ($p = strpos($this->data, $delim, $this->index)) {
 				$pos[] = $p;
 			}
 		}
 
 		// If none are found then return whole buffer
 		if (empty($pos)) {
-			return $this->read(strlen($this->data) - $this->index);
+			return $this->read($this->length - $this->index);
 		}
 
 		// Read the string and remove the delimiter
@@ -296,66 +281,5 @@ class Buffer {
 	public function readFloat32() {
 		$float = unpack('ffloat', $this->read(4));
 		return $float['float'];
-	}
-
-	/**
-	 * Conversion to float
-	 *
-	 * @access	 public
-	 * @param	  string	$string   String to convert
-	 * @return	 float	 32 bit float
-	 */
-	public function toFloat($string) {
-		// Check length
-		if (strlen($string) !== 4) {
-			return false;
-		}
-
-		// Convert
-		$float = unpack('ffloat', $string);
-		return $float['float'];
-	}
-
-	/**
-	 * Conversion to integer
-	 *
-	 * @access	 public
-	 * @param	  string	$string   String to convert
-	 * @param	  int	   $bits	 Number of bits
-	 * @return	 int	   Integer according to type
-	 */
-	public function toInt($string, $bits = 8) {
-		// Check length
-		if (strlen($string) !== ($bits / 8)) {
-			return false;
-		}
-
-		// Convert
-		switch($bits) {
-
-			// 8 bit unsigned
-			case 8:
-				$int = ord($string);
-				break;
-
-			// 16 bit unsigned
-			case 16:
-				$int = unpack('Sint', $string);
-				$int = $int['int'];
-				break;
-
-			// 32 bit unsigned
-			case 32:
-				$int = unpack('Lint', $string);
-				$int = $int['int'];
-				break;
-
-			// Invalid type
-			default:
-				$int = false;
-				break;
-		}
-
-		return $int;
 	}
 }

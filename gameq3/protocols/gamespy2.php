@@ -92,8 +92,8 @@ class Gamespy2 extends \GameQ3\Protocols {
 		}
 
 		// Now verify the end of the data is correct
-		if($buf->readLast() !== "\x00") {
-			$this->debug("Data for ".__METHOD__." does not have the proper ending. Ending: ".$buf->readLast());
+		if($buf->lookAhead(-1) !== "\x00") {
+			$this->debug("Data for ".__METHOD__." does not have the proper ending.");
 			return false;
 		}
 
@@ -123,8 +123,8 @@ class Gamespy2 extends \GameQ3\Protocols {
 		}
 
 		// Now verify the end of the data is correct
-		if($buf->readLast() !== "\x00") {
-			$this->debug("Data for ".__METHOD__." does not have the proper ending. Ending: ".$buf->readLast());
+		if($buf->lookAhead(-1) !== "\x00") {
+			$this->debug("Data for ".__METHOD__." does not have the proper ending.");
 			return false;
 		}
 
