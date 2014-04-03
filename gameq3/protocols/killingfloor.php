@@ -26,4 +26,6 @@ class Killingfloor extends \GameQ3\Protocols\Unreal2 {
 	protected $query_port = 7708;
 	protected $connect_port = 7707;
 	protected $ports_type = self::PT_DIFFERENT_COMPUTABLE;
+
+	protected $connect_string = 'steam://connect/{IDENTIFIER}'; // same as source
 }
