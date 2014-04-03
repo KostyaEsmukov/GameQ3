@@ -96,13 +96,13 @@ class Log {
 		$this->_backtrace($force_trace, $trace_skip);
 	}
 	
-	public function debug($str, $force_trace = false, $trace_skip = 0) {
+	public function debug($str, $force_trace=false, $trace_skip=0) {
 		$this->_message(self::DEBUG, 'Debug', $str, $force_trace, $trace_skip);
 	}
-	public function warning($str, $force_trace = false, $trace_skip = 0) {
+	public function warning($str, $force_trace=false, $trace_skip=0) {
 		$this->_message(self::WARNING, 'Warning', $str, $force_trace, $trace_skip);
 	}
-	public function error($str, $force_trace = false, $trace_skip = 0) {
+	public function error($str, $force_trace=false, $trace_skip=0) {
 		$this->_message(self::ERROR, 'Error', $str, $force_trace, $trace_skip);
 	}
 }
