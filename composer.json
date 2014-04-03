@@ -1,0 +1,36 @@
+{
+	"name": "kostya0shift/gameq3",
+	"description": "A PHP Gameserver Status Query Library",
+
+	"license": "GPL-3.0+",
+	"type": "library",
+	"keywords": ["game", "gameserver"],
+
+	"homepage": "https://github.com/kostya0shift/GameQ3",
+
+	"authors": [
+		{
+			"name": "Kostya Esmukov",
+			"email": "kostya.shift@gmail.com",
+			"homepage": "https://github.com/kostya0shift"
+		}
+	],
+
+	"support": {
+		"email": "kostya.shift@gmail.com",
+		"source": "https://github.com/kostya0shift/GameQ3",
+		"issues": "https://github.com/kostya0shift/GameQ3/issues"
+	},
+
+	"require": {
+		"php": ">=5.4",
+		"ext-sockets": "*",
+		"ext-curl": "*",
+		"ext-bz2": "*"
+	},
+
+	"autoload": {
+		"psr-4": { "GameQ3\\": "gameq3/" }
+	}
+
+}
