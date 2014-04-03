@@ -229,7 +229,7 @@ class Sockets {
 	private function _createSocketUDP($sctn, $throw = false) {
 		// This should never happen
 		/*if (!isset($this->sockets_udp_data[$sctn]) {
-			throw new GameQ_SocketsException("Cannot create UDP socket");
+			throw new SocketsException("Cannot create UDP socket");
 		}*/
 		
 		if (isset($this->sockets_udp[$sctn])) {
