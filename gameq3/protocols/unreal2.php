@@ -110,13 +110,21 @@ class Unreal2 extends \GameQ3\Protocols {
 	protected function _findEncoding($str) {
 		// Shit happens when clients use non-latin names in their game, game mixes ucs-2 encoding with one-byte national encoding
 		
-		$encs = array("windows-1251");
+		$utf8 = iconv("UCS-2//IGNORE", "UTF-8", $str);
+
+		$encs = array("windows-1251", "windows-1252");
 		foreach($encs as $enc) {
-			$s = iconv("utf-8", $enc, iconv("UCS-2//IGNORE", "UTF-8", $str));
-			if (@iconv("utf-8", "utf-8", $s) === $s) return $s; // when string has corrupted chars, this thing will fail
+			
+			$s = @iconv("utf-8", $enc, $utf8);
+
+			if ($s === false)
+				continue;
+
+			if (@iconv("utf-8", "utf-8", $s) === $s)
+				return $s; // when string has corrupted chars, this thing will fail
 		}
 		
-		return iconv("UCS-2//IGNORE", "UTF-8", $str);
+		return $utf8;
 	}
 	
 	protected function _readUnrealString(Buffer &$buf) {
