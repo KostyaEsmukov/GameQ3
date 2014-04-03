@@ -25,7 +25,7 @@ class Minecraftquery extends \GameQ3\Protocols\Gamespy3 {
 	protected $connect_port = 25565;
 	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
-	protected $name = 'minecraftquery';
+	protected $name = 'minecraft';
 	protected $name_long = "Minecraft";
 	
 }

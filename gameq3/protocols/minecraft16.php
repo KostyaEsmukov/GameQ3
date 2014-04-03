@@ -29,7 +29,7 @@ class Minecraft16 extends \GameQ3\Protocols\Minecraft {
 	protected $packets = null;
 	
 	protected $protocol = 'minecraft16';
-	protected $name = 'minecraft16';
+	protected $name = 'minecraft';
 	protected $name_long = "Minecraft 1.6";
 	
 	protected function _toShort($i) {
