@@ -53,28 +53,28 @@ class Result {
 		return count($this->result[$key]);
 	}
 	
-	public function addCustom($zone, $name, $value) {
+	public function addCustom($zone, $key, $value) {
 		if ($this->isIgnored($zone)) return false;
-		$this->result[$zone][$name] = $value;
+		$this->result[$zone][$key] = $value;
 		return true;
 	}
 
-	public function addInfo($name, $value) {
-		$this->result['info'][$name] = $value;
+	public function addInfo($key, $value) {
+		$this->result['info'][$key] = $value;
 		return true;
 	}
 	
-	public function addGeneral($name, $value) {
-		$this->result['general'][$name] = $value;
+	public function addGeneral($key, $value) {
+		$this->result['general'][$key] = $value;
 		return true;
 	}
 	
-	public function issetGeneral($name) {
-		return isset($this->result['general'][$name]);
+	public function issetGeneral($key) {
+		return isset($this->result['general'][$key]);
 	}
 	
-	public function getGeneral($name) {
-		return isset($this->result['general'][$name]) ? $this->result['general'][$name] : null;
+	public function getGeneral($key, $default=null) {
+		return isset($this->result['general'][$key]) ? $this->result['general'][$key] : $default;
 	}
 	
 	public function addSetting($name, $value) {
