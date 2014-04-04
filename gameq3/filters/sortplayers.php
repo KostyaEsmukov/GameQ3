@@ -24,7 +24,7 @@ class Sortplayers {
 
 	const DEFAULT_ORDER = 'asc';
  
-	public static function filter(&$data, $args) {
+	public static function filter($protocol_filterparams, &$data, $args) {
 		if (empty($data['players']))
 			return;
 

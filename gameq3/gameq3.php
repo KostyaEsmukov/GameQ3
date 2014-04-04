@@ -31,9 +31,9 @@
 
 namespace GameQ3;
 
-// Autoload classes
 use GameQ3\Core\Log;
 
+// Autoload classes
 spl_autoload_extensions(".php");
 spl_autoload_register();
 
@@ -68,7 +68,7 @@ class GameQ3 {
 	 * @param bool $debug Log debug messages or not
 	 * @param bool $trace Log backtrace or not
 	 */
-	public function setLogLevel($error, $warning = true, $debug = false, $trace = false) {
+	public function setLogLevel($error=true, $warning=true, $debug=false, $trace=false) {
 		$this->log->setLogLevel($error, $warning, $debug, $trace);
 	}
 
@@ -259,6 +259,7 @@ class GameQ3 {
 		if (!isset($server_info['type']) || !is_string($server_info['type'])) {
 			throw new UserException("Missing server info key 'type'");
 		}
+		$server_info['type'] = strtolower($server_info['type']);
 
 		if (!isset($server_info['id']) || (!is_string($server_info['id']) && !is_numeric($server_info['id']))) {
 			throw new UserException("Missing server info key 'id'");
@@ -277,7 +278,8 @@ class GameQ3 {
 			foreach($server_info['filters'] as $filter => &$args) {
 				if ($args !== false && !is_array($args))
 					throw new UserException("Filter arguments must be an array or boolean false");
-				$this->servers_filters[ $server_info['id'] ][ $filter ] = $args;
+
+				$this->servers_filters[ $server_info['id'] ][ strtolower($filter) ] = $args;
 			}
 			
 			unset($server_info['filters']);
@@ -347,37 +349,40 @@ class GameQ3 {
 		return $this->_request();
 	}
 
-	private function _applyFilters($key, &$result) {
+	private function _applyFilter($name, $instance, &$result, &$args) {
+		$filt = "\\GameQ3\\Filters\\".ucfirst($name);
+
+		try {
+			class_exists($filt, true); // try to load class
+			call_user_func_array($filt . "::filter",
+				array(
+					$instance->getFilterParams($name),
+					&$result,
+					$args
+				)
+			);
+		}
+		catch(\Exception $e) {
+			$this->log->warning($e);
+		}
+	}
+
+	private function _applyFilters($instance, $key, &$result) {
 		$sf = (isset($this->servers_filters[$key]) ? $this->servers_filters[$key] : array());
 		foreach($this->filters as $name => $args) {
 			if (isset($sf[$name])) {
 				$args = $sf[$name];
-				unset($sf[$name]);
+
 				if ($args === false) continue;
 			}
-			$filt = "\\GameQ3\\Filters\\".ucfirst($name);
-			
-			try {
-				class_exists($filt, true); // try to load class
-				call_user_func_array($filt . "::filter", array( &$result, $args ));
-			}
-			catch(\Exception $e) {
-				$this->log->warning($e);
-			}
+
+			$this->_applyFilter($name, $instance, $result, $args);
 		}
 		
 		foreach($sf as $name => $args) {
 			if ($args === false) continue;
-			
-			$filt = "\\GameQ3\\Filters\\".ucfirst($name);
-			
-			try {
-				class_exists($filt, true); // try to load class
-				call_user_func_array($filt . "::filter", array( &$result, $args ));
-			}
-			catch(\Exception $e) {
-				$this->log->warning($e);
-			}
+
+			$this->_applyFilter($name, $instance, $result, $args);
 		}
 	}
 
@@ -493,7 +498,7 @@ class GameQ3 {
 				$this->log->debug($e);
 			}
 			$result[$key] = $instance->resultFetch();
-			$this->_applyFilters($key, $result[$key]);
+			$this->_applyFilters($instance, $key, $result[$key]);
 		}
 
 		return $result;

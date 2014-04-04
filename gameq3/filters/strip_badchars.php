@@ -22,7 +22,7 @@ namespace GameQ3\filters;
  
 class Strip_badchars {
 
-	public static function filter(&$data, $args) {
+	public static function filter($protocol_filterparams, &$data, $args) {
 
 		array_walk_recursive($data, function(&$val, $key) {
 			if (is_string($val)) {

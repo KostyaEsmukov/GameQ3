@@ -37,7 +37,15 @@ class Ut3 extends \GameQ3\Protocols\Gamespy3 {
 	protected $query_port = 6500;
 	protected $connect_port = 7777;
 	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
-	
+
+	protected  function construct() {
+		$this->filter_params['colorize'] = array(
+			'strip' => function($string) {
+					return preg_replace('/\x1b.../', '', $string);
+				},
+		);
+	}
+
 	protected function _parse_arrays_break(&$buf) {
 		/*
 			We should break in case:

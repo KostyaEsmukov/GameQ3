@@ -42,7 +42,8 @@ abstract class Protocols {
 	protected $network = true;
 
 	protected $connect_string = false;
-	
+	protected $filter_params = array();
+
 	protected $server_info;
 
 	private $unset;
@@ -369,6 +370,7 @@ abstract class Protocols {
 	
 	final public function popRequests() {
 		$q = &$this->queue;
+		unset($this->queue);
 		$this->queue = array();
 		return $q;
 	}
@@ -437,6 +439,13 @@ abstract class Protocols {
 	protected function processRequests($qid, $requests) {
 		// Overload
 		$this->error("function processRequests must always be overloaded in protocols");
+		return false;
+	}
+
+	final public function getFilterParams($filter) {
+		if (isset($this->filter_params[$filter]))
+			return $this->filter_params[$filter];
+
 		return false;
 	}
 	

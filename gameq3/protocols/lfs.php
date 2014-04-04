@@ -43,6 +43,12 @@ class Lfs extends \GameQ3\Core\Protocols {
 			throw new UserException("Hostname must be set for lfs protocol");
 			
 		$this->url = sprintf($this->url, urlencode($this->server_info['hostname']));
+
+		$this->filter_params['colorize'] = array(
+			'strip' => function($string) {
+					return preg_replace('/<[^>]*>/i', '', $string);
+				},
+		);
 	}
 	
 	protected function getIdentifier() {

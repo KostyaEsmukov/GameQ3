@@ -34,8 +34,15 @@ class Unreal2 extends \GameQ3\Core\Protocols {
 	protected $protocol = 'unreal2';
 	protected $short_name = 'unreal2';
 	protected $name_long = "Unreal 2 Engine";
-	
-	
+
+	protected  function construct() {
+		$this->filter_params['colorize'] = array(
+			'strip' => function($string) {
+					return preg_replace('/\x1b.../', '', $string);
+				},
+		);
+	}
+
 	public function init() {
 		$this->queue('status', 'udp', $this->packets['status']);
 		if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);

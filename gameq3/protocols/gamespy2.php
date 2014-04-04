@@ -35,7 +35,14 @@ class Gamespy2 extends \GameQ3\Core\Protocols {
 	
 	protected $ports_type = self::PT_UNKNOWN;
 
-	
+	protected  function construct() {
+		$this->filter_params['colorize'] = array(
+			'strip' => function($string) {
+					return preg_replace('/\x1b.../', '', $string);
+				},
+		);
+	}
+
 	public function init() {
 		if ($this->isRequested('teams'))
 			$this->result->setIgnore('teams', false);

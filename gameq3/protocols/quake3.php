@@ -35,7 +35,15 @@ class Quake3 extends \GameQ3\Core\Protocols {
 	protected $short_name = 'quake3';
 	protected $name_long = "Quake 3";
 
-	public function init() {
+	protected  function construct() {
+		$this->filter_params['colorize'] = array(
+			'strip' => function($string) {
+					return preg_replace('#(\^.)#', '', $string);
+				},
+		);
+	}
+
+	protected function init() {
 		$this->queue('status', 'udp', $this->packets['status'], array('response_count' => 1));
 	}
 
@@ -73,7 +81,7 @@ class Quake3 extends \GameQ3\Core\Protocols {
 		while ($buf_server->getLength()) {
 			$key = $buf_server->readString('\\');
 			$val = $this->filterInt($buf_server->readStringMulti(array('\\', "\x0a"), $delimfound));
-			
+
 			switch($key) {
 				case 'g_gametype': $this->result->addGeneral('mode', $val); break;
 				case 'mapname': $this->result->addGeneral('map', $val); break;
@@ -84,7 +92,7 @@ class Quake3 extends \GameQ3\Core\Protocols {
 				case 'pswrd': $this->result->addGeneral('password', ($val != 0)); break;
 				case 'sv_punkbuster': $this->result->addGeneral('secure', ($val != 0)); break;
 			}
-			$this->result->addSetting($key,$val);
+			$this->result->addSetting($key, $val);
 			
 
 			if ($delimfound === "\x0a")
