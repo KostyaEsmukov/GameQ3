@@ -67,15 +67,6 @@ class Buffer {
 	}
 
 	/**
-	 * Return all the data
-	 *
-	 * @return  string|array	The data
-	 */
-	public function getData() {
-		return $this->data;
-	}
-
-	/**
 	 * Return data currently in the buffer
 	 *
 	 * @return  string|array	The data currently in the buffer
@@ -133,7 +124,7 @@ class Buffer {
 	 * @param   int			 $length	 Length of data to skip
 	 */
 	public function skip($length=1) {
-		$this->jumpto($this->length + $length);
+		$this->jumpto($this->index + $length);
 	}
 
 	/**
@@ -143,7 +134,7 @@ class Buffer {
 	 * @param   int   $index  Position to go to
 	 */
 	public function jumpto($index) {
-		$this->index = min($index, $this->length - 1);
+		$this->index = max(0, min($index, $this->length - 1));
 	}
 
 	/**
@@ -165,15 +156,15 @@ class Buffer {
 	 */
 	public function readString($delim="\x00") {
 		// Get position of delimiter
-		$len = strpos($this->data, $delim, $this->index);
+		$pos = strpos($this->data, $delim, $this->index);
 
 		// If it is not found then return whole buffer
-		if ($len === false) {
+		if ($pos === false) {
 			return $this->read($this->length - $this->index);
 		}
 
 		// Read the string and remove the delimiter
-		$string = $this->read($len - $this->index);
+		$string = $this->read($pos - $this->index);
 		$this->skip(1);
 
 		return $string;
@@ -214,10 +205,12 @@ class Buffer {
 		// Get position of delimiters
 		$pos = array();
 		foreach ($delims as $delim) {
-			if ($p = strpos($this->data, $delim, $this->index)) {
+			if (($p = strpos($this->data, $delim, $this->index)) !== false) {
 				$pos[] = $p;
 			}
 		}
+
+		$delimfound = null;
 
 		// If none are found then return whole buffer
 		if (empty($pos)) {
