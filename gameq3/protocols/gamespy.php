@@ -54,7 +54,7 @@ class Gamespy extends \GameQ3\Protocols {
 	);
 
 	protected $protocol = 'gamespy';
-	protected $name = 'gamespy';
+	protected $short_name = 'gamespy';
 	protected $name_long = "Gamespy";
 	
 	protected $ports_type = self::PT_UNKNOWN;

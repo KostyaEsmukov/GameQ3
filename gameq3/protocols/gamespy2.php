@@ -30,7 +30,7 @@ class Gamespy2 extends \GameQ3\Protocols {
 	);
 
 	protected $protocol = 'gamespy2';
-	protected $name = 'gamespy2';
+	protected $short_name = 'gamespy2';
 	protected $name_long = "Gamespy2";
 	
 	protected $ports_type = self::PT_UNKNOWN;

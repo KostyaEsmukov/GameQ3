@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Ffe extends \GameQ3\Protocols\Source {
-	protected $name = "ffe";
+	protected $short_name = "ffe";
 	protected $name_long = "Fortress Forever";
 }

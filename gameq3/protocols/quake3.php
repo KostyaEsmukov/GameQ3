@@ -32,7 +32,7 @@ class Quake3 extends \GameQ3\Protocols {
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'quake3';
-	protected $name = 'quake3';
+	protected $short_name = 'quake3';
 	protected $name_long = "Quake 3";
 
 	public function init() {

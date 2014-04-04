@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Cscz extends \GameQ3\Protocols\Source {
-	protected $name = "cscz";
+	protected $short_name = "cscz";
 	protected $name_long = "Counter-Strike: Condition Zero";
 
 

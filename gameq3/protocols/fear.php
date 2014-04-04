@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Fear extends \GameQ3\Protocols\Gamespy2 {
-	protected $name = "fear";
+	protected $short_name = "fear";
 	protected $name_long = "F.E.A.R.";
 
 	protected $query_port = 27888;

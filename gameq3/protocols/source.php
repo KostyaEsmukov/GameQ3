@@ -35,7 +35,7 @@ class Source extends \GameQ3\Protocols {
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'source';
-	protected $name = 'source';
+	protected $short_name = 'source';
 	protected $name_long = "Source Server";
 	
 	protected $connect_string = 'steam://connect/{IDENTIFIER}';

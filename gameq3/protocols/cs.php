@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Cs extends \GameQ3\Protocols\Source {
-	protected $name = "cs";
+	protected $short_name = "cs";
 	protected $name_long = "Counter-Strike 1.6";
 
 

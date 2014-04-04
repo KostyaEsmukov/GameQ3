@@ -21,7 +21,7 @@ namespace GameQ3\protocols;
  
 class Codwaw extends \GameQ3\Protocols\Quake3 {
 
-	protected $name = "codwaw";
+	protected $short_name = "codwaw";
 	protected $name_long = "Call of Duty: World at War";
 
 	protected $query_port = 28960;

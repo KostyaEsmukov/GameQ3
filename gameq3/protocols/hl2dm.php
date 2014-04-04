@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Hl2dm extends \GameQ3\Protocols\Source {
-	protected $name = "hl2dm";
+	protected $short_name = "hl2dm";
 	protected $name_long = "Half Life 2: Deathmatch";
 }

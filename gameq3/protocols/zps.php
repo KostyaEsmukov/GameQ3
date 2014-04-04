@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Zps extends \GameQ3\Protocols\Source {
-	protected $name = "zps";
+	protected $short_name = "zps";
 	protected $name_long = "Zombie Panic Source";
 }

@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Bf1942 extends \GameQ3\Protocols\Gamespy {
-	protected $name = "bf1942";
+	protected $short_name = "bf1942";
 	protected $name_long = "Battlefield 1942";
 
 	protected $query_port = 23000;

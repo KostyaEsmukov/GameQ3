@@ -33,7 +33,7 @@ class Minecraft extends \GameQ3\Protocols {
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'minecraft';
-	protected $name = 'minecraft';
+	protected $short_name = 'minecraft';
 	protected $name_long = "Minecraft";
 	
 	

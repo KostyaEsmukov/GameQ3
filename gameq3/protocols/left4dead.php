@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Left4dead extends \GameQ3\Protocols\Source {
-	protected $name = "left4dead";
+	protected $short_name = "left4dead";
 	protected $name_long = "Left 4 Dead";
 
 	protected function _detectMode($game_description, $appid) {

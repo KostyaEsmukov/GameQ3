@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Tf2 extends \GameQ3\Protocols\Source {
-	protected $name = "tf2";
+	protected $short_name = "tf2";
 	protected $name_long = "Team Fortress 2";
 }

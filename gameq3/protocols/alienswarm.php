@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Alienswarm extends \GameQ3\Protocols\Source {
-	protected $name = "alienswarm";
+	protected $short_name = "alienswarm";
 	protected $name_long = "Alien Swarm";
 }

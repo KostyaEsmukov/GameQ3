@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Il2 extends \GameQ3\Protocols\Gamespy {
-	protected $name = "il2";
+	protected $short_name = "il2";
 	protected $name_long = "IL-2 Sturmovik";
 
 	protected $query_port = 21000;

@@ -50,7 +50,7 @@ class Teamspeak3 extends \GameQ3\Protocols {
 	protected $connect_string = 'ts3server://{CONNECT_ADDR}?port={CONNECT_PORT}'; // &nickname= . Nickname defaults to Player.
 	
 	protected $protocol = 'teamspeak3';
-	protected $name = 'teamspeak3';
+	protected $short_name = 'teamspeak3';
 	protected $name_long = "Teamspeak 3";
 	
 	protected $string_find = array(

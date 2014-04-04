@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Ns extends \GameQ3\Protocols\Source {
-	protected $name = "ns";
+	protected $short_name = "ns";
 	protected $name_long = "Natural Selection";
 }

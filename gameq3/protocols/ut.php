@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Ut extends \GameQ3\Protocols\Gamespy {
-	protected $name = "ut";
+	protected $short_name = "ut";
 	protected $name_long = "Unreal Tournament";
 
 	protected $query_port = 7778;

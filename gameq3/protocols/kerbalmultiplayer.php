@@ -28,7 +28,7 @@ namespace GameQ3\protocols;
 
 class kerbalmultiplayer extends \GameQ3\Protocols {
 	protected $protocol = 'kerbalmultiplayer';
-	protected $name = 'kerbalmultiplayer';
+	protected $short_name = 'kerbalmultiplayer';
 	protected $name_long = "Kerbal Space Program - Multiplayer";
 	
 	protected $url = "/";

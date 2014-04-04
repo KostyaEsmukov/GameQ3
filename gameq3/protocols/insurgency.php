@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Insurgency extends \GameQ3\Protocols\Source {
-	protected $name = "insurgency";
+	protected $short_name = "insurgency";
 	protected $name_long = "Insurgency";
 }

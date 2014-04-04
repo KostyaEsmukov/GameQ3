@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Zombiemaster extends \GameQ3\Protocols\Source {
-	protected $name = "zombiemaster";
+	protected $short_name = "zombiemaster";
 	protected $name_long = "Zombie Master";
 }

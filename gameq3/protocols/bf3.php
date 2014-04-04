@@ -41,7 +41,7 @@ class Bf3 extends \GameQ3\Protocols {
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'bf3';
-	protected $name = 'bf3';
+	protected $short_name = 'bf3';
 	protected $name_long = "Battlefield 3";
 	
 	

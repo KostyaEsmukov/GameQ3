@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Brink extends \GameQ3\Protocols\Source {
-	protected $name = "brink";
+	protected $short_name = "brink";
 	protected $name_long = "Brink";
 }

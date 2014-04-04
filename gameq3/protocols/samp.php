@@ -49,7 +49,7 @@ class Samp extends \GameQ3\Protocols {
 	protected $ports_type = self::PT_SAME;
 	
 	protected $protocol = 'samp';
-	protected $name = 'samp';
+	protected $short_name = 'samp';
 	protected $name_long = "San Andreas Multiplayer";
 	
 	protected $players_received;

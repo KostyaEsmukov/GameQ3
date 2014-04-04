@@ -21,7 +21,7 @@ namespace GameQ3\protocols;
  
 class Ut2004 extends \GameQ3\Protocols\Unreal2 {
 
-	protected $name = "ut2004";
+	protected $short_name = "ut2004";
 	protected $name_long = "Unreal Tournament 2004";
 
 	protected $query_port = 7778;

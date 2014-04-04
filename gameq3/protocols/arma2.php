@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Arma2 extends \GameQ3\Protocols\Gamespy3 {
-	protected $name = "arma2";
+	protected $short_name = "arma2";
 	protected $name_long = "Armed Assault 2";
 
 	protected $query_port = 2302;

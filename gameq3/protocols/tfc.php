@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Tfc extends \GameQ3\Protocols\Source {
-	protected $name = "tfc";
+	protected $short_name = "tfc";
 	protected $name_long = "Team Fortress Classic";
 }

@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Bfv extends \GameQ3\Protocols\Gamespy2 {
-	protected $name = "bfv";
+	protected $short_name = "bfv";
 	protected $name_long = "Battlefield Vietnam";
 
 	protected $query_port = 23000;

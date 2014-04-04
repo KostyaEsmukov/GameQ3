@@ -31,7 +31,7 @@ namespace GameQ3\protocols;
 */
 
 class Ut3 extends \GameQ3\Protocols\Gamespy3 {
-	protected $name = "ut3";
+	protected $short_name = "ut3";
 	protected $name_long = "Unreal Tournament 3";
 
 	protected $query_port = 6500;

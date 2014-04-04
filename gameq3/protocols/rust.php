@@ -23,7 +23,7 @@ namespace GameQ3\protocols;
 // Players array is unusable, as it consists of "hidden"-0 rows for each player.
 
 class Rust extends \GameQ3\Protocols\Source {
-	protected $name = "rust";
+	protected $short_name = "rust";
 	protected $name_long = "Rust";
 
 	protected $query_port = 28016;

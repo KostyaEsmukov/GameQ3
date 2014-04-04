@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Left4dead2 extends \GameQ3\Protocols\Source {
-	protected $name = "left4dead2";
+	protected $short_name = "left4dead2";
 	protected $name_long = "Left 4 Dead 2";
 }

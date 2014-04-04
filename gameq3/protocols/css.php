@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Css extends \GameQ3\Protocols\Source {
-	protected $name = "css";
+	protected $short_name = "css";
 	protected $name_long = "Counter-Strike: Source";
 }

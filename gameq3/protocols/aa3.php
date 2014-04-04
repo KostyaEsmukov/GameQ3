@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Aa3 extends \GameQ3\Protocols\Source {
-	protected $name = "aa3";
+	protected $short_name = "aa3";
 	protected $name_long = " America's Army 3";
 }

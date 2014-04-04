@@ -24,7 +24,7 @@ namespace GameQ3\protocols;
  */
  
 class Bf4 extends \GameQ3\Protocols\Bf3 {
-	protected $name = "bf4";
+	protected $short_name = "bf4";
 	protected $name_long = "Battlefield 4";
 
 }

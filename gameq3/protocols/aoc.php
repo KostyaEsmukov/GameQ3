@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Aoc extends \GameQ3\Protocols\Source {
-	protected $name = "aoc";
+	protected $short_name = "aoc";
 	protected $name_long = "Age of Chivalry";
 }

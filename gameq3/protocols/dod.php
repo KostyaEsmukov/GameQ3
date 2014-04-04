@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Dod extends \GameQ3\Protocols\Source {
-	protected $name = "dod";
+	protected $short_name = "dod";
 	protected $name_long = "Day of Defeat";
 }

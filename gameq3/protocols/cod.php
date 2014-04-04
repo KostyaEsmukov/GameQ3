@@ -21,7 +21,7 @@ namespace GameQ3\protocols;
  
 class Cod extends \GameQ3\Protocols\Quake3 {
 
-	protected $name = "cod";
+	protected $short_name = "cod";
 	protected $name_long = "Call of Duty";
 
 	protected $query_port = 28960;

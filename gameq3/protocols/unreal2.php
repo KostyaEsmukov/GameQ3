@@ -32,7 +32,7 @@ class Unreal2 extends \GameQ3\Protocols {
 
 	protected $ports_type = self::PT_UNKNOWN;
 	protected $protocol = 'unreal2';
-	protected $name = 'unreal2';
+	protected $short_name = 'unreal2';
 	protected $name_long = "Unreal 2 Engine";
 	
 	

@@ -27,7 +27,7 @@ use GameQ3\UserException;
 
 class Lfs extends \GameQ3\Protocols {
 	protected $protocol = 'lfs';
-	protected $name = 'lfs';
+	protected $short_name = 'lfs';
 	protected $name_long = "Live for Speed";
 	
 	protected $network = false;

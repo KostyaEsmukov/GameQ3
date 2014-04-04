@@ -21,7 +21,7 @@
 namespace GameQ3\protocols;
  
 class Mohwf extends \GameQ3\Protocols\Bf3 {
-	protected $name = 'mohwf';
+	protected $short_name = 'mohwf';
 	protected $name_long = "Medal of Honor Warfighter";
 
 	

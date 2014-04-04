@@ -20,6 +20,6 @@
 namespace GameQ3\protocols;
  
 class Codmw3 extends \GameQ3\Protocols\Source {
-	protected $name = "codmw3";
+	protected $short_name = "codmw3";
 	protected $name_long = "Call of Duty: Modern Warfare 3";
 }

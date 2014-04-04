@@ -20,7 +20,7 @@
 namespace GameQ3\protocols;
  
 class Arma2oa extends \GameQ3\Protocols\Arma2 {
-	protected $name = "arma2oa";
+	protected $short_name = "arma2oa";
 	protected $name_long = "Armed Assault 2: Operation Arrowhead";
 	
 }

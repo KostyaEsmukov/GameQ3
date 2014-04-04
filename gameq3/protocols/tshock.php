@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
 
 class Tshock extends \GameQ3\Protocols {
 	protected $protocol = 'tshock';
-	protected $name = 'terraria';
+	protected $short_name = 'terraria';
 	protected $name_long = "Terraria";
 	
 	protected $query_port = 7878;
