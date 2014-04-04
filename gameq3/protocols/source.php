@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\Core\Buffer;
 
-class Source extends \GameQ3\Protocols {
+class Source extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'challenge' => "\xFF\xFF\xFF\xFF\x56\xFF\xFF\xFF\xFF",

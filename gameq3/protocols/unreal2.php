@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\Core\Buffer;
 
-class Unreal2 extends \GameQ3\Protocols {
+class Unreal2 extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'status' => "\x79\x00\x00\x00\x00",

@@ -18,14 +18,13 @@
  *
  */
  
-namespace GameQ3;
- 
-use GameQ3\Core\Log;
-use GameQ3\Core\Result;
+namespace GameQ3\Core;
+
+use GameQ3\UserException;
 
 abstract class Protocols {
 	protected $protocol = 'undefined';
-	protected $name = 'undefined';
+	protected $short_name = 'undefined';
 	protected $name_long = "Unknown";
 	
 	const PT_SAME = 1; // Query and Connect ports are the same
@@ -41,18 +40,21 @@ abstract class Protocols {
 	protected $connect_port = false;
 	protected $ports_type = self::PT_UNKNOWN;
 	protected $network = true;
+
 	protected $connect_string = false;
 	
 	protected $server_info;
-	private $unst;
+
+	private $unset;
 	private $is_not_requested;
 
 	/**
 	 * @var Log
 	 */
 	private $log = null;
+
 	private $debug = false;
-	private $ping_sum = 0;
+	private $ping_floatsum = 0;
 	private $ping_cnt = 0;
 	private $retry_cnt = 0;
 
@@ -60,6 +62,7 @@ abstract class Protocols {
 	 * @var Result
 	 */
 	protected $result;
+
 	private $queue = array();
 	private $queue_check = array();
 	private $force_offline;
@@ -77,25 +80,25 @@ abstract class Protocols {
 				$this->connect_addr = $server_info['connect_addr'];
 			} else
 			if (isset($server_info['connect_host'])) {
-				list($this->connect_addr, $connect_port) = $this->parseHost($server_info['connect_host']);
+				list($this->connect_addr, $connect_port) = $this->_parseHost($server_info['connect_host']);
 			}
-			if (isset($server_info['connect_port'])) $connect_port = $this->filterPort($server_info['connect_port']);
+			if (isset($server_info['connect_port'])) $connect_port = $this->_filterPort($server_info['connect_port']);
 			
 			if (isset($server_info['addr'])) {
 				$this->query_addr = $server_info['addr'];
 			} else
 			if (isset($server_info['host'])) {
-				list($this->query_addr, $query_port) = $this->parseHost($server_info['host']);
+				list($this->query_addr, $query_port) = $this->_parseHost($server_info['host']);
 			}
-			if (isset($server_info['port'])) $query_port = $this->filterPort($server_info['port']);
+			if (isset($server_info['port'])) $query_port = $this->_filterPort($server_info['port']);
 			
 			if (isset($server_info['query_addr'])) {
 				$this->query_addr = $server_info['query_addr'];
 			} else
 			if (isset($server_info['query_host'])) {
-				list($this->query_addr, $query_port) = $this->parseHost($server_info['query_host']);
+				list($this->query_addr, $query_port) = $this->_parseHost($server_info['query_host']);
 			}
-			if (isset($server_info['query_port'])) $query_port = $this->filterPort($server_info['query_port']);
+			if (isset($server_info['query_port'])) $query_port = $this->_filterPort($server_info['query_port']);
 			
 			if (!$this->connect_addr && !$this->query_addr) {
 				throw new UserException("Missing server address info");
@@ -107,7 +110,7 @@ abstract class Protocols {
 				$this->connect_addr = $this->query_addr;
 			}
 		
-			$this->validateAddrAsString($this->query_addr);
+			$this->_validateAddrAsString($this->query_addr);
 
 			$this->fixPorts($query_port, $connect_port);
 			
@@ -122,27 +125,27 @@ abstract class Protocols {
 		unset($server_info['debug']);
 		
 		
-		$this->unst = array();
+		$this->unset = array();
 		if (isset($server_info['unset'])) {
 			if (!is_array($server_info['unset']))
 				$server_info['unset'] = array($server_info['unset']);
 				
 			foreach($server_info['unset'] as $unst)
-				$this->unst[$unst] = true;
+				$this->unset[$unst] = true;
 		}
 		unset($server_info['unset']);
 		
-		$this->is_not_requested = $this->unst;
+		$this->is_not_requested = $this->unset;
 
-		if (!isset($this->unst['teams']))
-			$this->unst['teams'] = true; // Unset teams by default
+		if (!isset($this->unset['teams']))
+			$this->unset['teams'] = true; // Unset teams by default
 		
 		$this->server_info = $server_info;
 		
 		$this->construct();
 	}
 	
-	private function parseHost($host) {
+	private function _parseHost($host) {
 		$colonpos = strrpos($host, ':');
 		if ($colonpos === false) {
 			$addr = $host;
@@ -154,14 +157,14 @@ abstract class Protocols {
 				$port = false;
 			} else {
 				$addr = substr($host, 0, $colonpos);
-				$port = $this->filterPort($port);
+				$port = $this->_filterPort($port);
 			}
 		}
 		
 		return array($addr, $port);
 	}
 	
-	private function validateAddrAsString($addr) {
+	private function _validateAddrAsString($addr) {
 		if (!is_string($addr) || $addr === "")
 			throw new UserException("Wrong address (empty)");
 			
@@ -177,7 +180,7 @@ abstract class Protocols {
 		return true;
 	}
 	
-	private function filterPort($var) {
+	private function _filterPort($var) {
 		if (is_int($var)) return $var;
 		if (is_string($var) && ctype_digit($var)) return intval($var);
 		return false;
@@ -261,7 +264,7 @@ abstract class Protocols {
 				}
 			}
 		} else {
-			throw new UserException("Unknown ports_type for game " . $this->name);
+			throw new UserException("Unknown ports_type for game " . $this->short_name);
 		}
 	}
 	
@@ -281,7 +284,7 @@ abstract class Protocols {
 	
 	
 	final protected function setConnectPort($port) {
-		$port = $this->filterPort($port);
+		$port = $this->_filterPort($port);
 		if (!is_int($port)) return;
 		if (is_int($this->connect_port) && $this->connect_port !== $port) {
 			$this->debug("Defined connect port '" . $this->connect_port ."' is not equal to received from the server one '" . $port . "'. Using port provided by server");
@@ -326,8 +329,8 @@ abstract class Protocols {
 		return $this->connect_addr . ':' . $this->connect_port;
 	}
 
-	
-	protected function filterInt($var) {
+
+	final protected function filterInt($var) {
 		if (is_string($var)) {
 			if (ctype_digit($var)) {
 				$i = intval($var);
@@ -350,13 +353,13 @@ abstract class Protocols {
 
 	final protected function addPing($p) {
 		if ($p !== null) {
-			$this->ping_sum += $p;
+			$this->ping_floatsum += 1/$p;
 			$this->ping_cnt++;
 		}
 	}
 	
 	final protected function addRetry($r) {
-		if ($r !== null)
+		if (is_int($r))
 			$this->retry_cnt += $r;
 	}
 	
@@ -366,12 +369,11 @@ abstract class Protocols {
 	
 	final public function popRequests() {
 		$q = &$this->queue;
-		unset($this->queue);
 		$this->queue = array();
 		return $q;
 	}
 	
-	final protected function queue($name, $transport, $packets, $more = array() ) {
+	final protected function queue($name, $transport, $packets, $more=array()) {
 		$this->queue_check[$name] = true;
 		
 		$this->queue[$name] = array(
@@ -396,7 +398,7 @@ abstract class Protocols {
 		$this->retry_cnt = 0;
 		$this->force_offline = false;
 		
-		$this->result = new Result($this->unst);
+		$this->result = new Result($this->unset);
 		
 		$this->result->addInfo('query_addr', $this->query_addr);
 		$this->result->addInfo('query_port', $this->query_port);
@@ -405,7 +407,7 @@ abstract class Protocols {
 		$this->result->addInfo('connect_port', $this->connect_port);
 		
 		$this->result->addInfo('protocol', $this->protocol);
-		$this->result->addInfo('short_name', $this->name);
+		$this->result->addInfo('short_name', $this->short_name);
 		$this->result->addInfo('long_name', $this->name_long);
 		
 		try {
@@ -501,7 +503,7 @@ abstract class Protocols {
 		
 		$this->result->addInfo('connect_string', $this->getConnectString()); // We could do this in protocolInit() function, but connect_port can be changed in some protocols after query.
 		
-		$ping = ($this->ping_cnt != 0 ? ($this->ping_sum / $this->ping_cnt)*1000 : null);
+		$ping = ($this->ping_cnt != 0 ? ($this->ping_cnt / $this->ping_floatsum)*1000 : null);
 		$this->result->addInfo('online', $online);
 		$this->result->addInfo('ping_average', $ping);
 		$this->result->addInfo('retry_count', $this->retry_cnt);

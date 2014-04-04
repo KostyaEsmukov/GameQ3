@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\Core\Buffer;
 
-class Quake3 extends \GameQ3\Protocols {
+class Quake3 extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'status' => "\xFF\xFF\xFF\xFF\x67\x65\x74\x73\x74\x61\x74\x75\x73\x0A",

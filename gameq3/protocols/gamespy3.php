@@ -42,7 +42,7 @@ if ($result['info']['online'] == true) {
 
 use GameQ3\Core\Buffer;
 
-class Gamespy3 extends \GameQ3\Protocols {
+class Gamespy3 extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'challenge' => "\xFE\xFD\x09\x10\x20\x30\x40",

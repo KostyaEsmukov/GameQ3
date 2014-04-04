@@ -26,7 +26,7 @@ namespace GameQ3\protocols;
 use GameQ3\Core\Buffer;
 use GameQ3\UserException;
 
-class Teamspeak3 extends \GameQ3\Protocols {
+class Teamspeak3 extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'login' => "login client_login_name=%s client_login_password=%s\x0A",

@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\Core\Buffer;
 
-class Minecraft extends \GameQ3\Protocols {
+class Minecraft extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		//'status' => "\xFE",

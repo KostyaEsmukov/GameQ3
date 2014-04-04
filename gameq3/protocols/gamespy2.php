@@ -22,7 +22,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\Core\Buffer;
 
-class Gamespy2 extends \GameQ3\Protocols {
+class Gamespy2 extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'details' => "\xFE\xFD\x00\x43\x4F\x52\x59\xFF\x00\x00",

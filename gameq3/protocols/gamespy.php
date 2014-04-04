@@ -40,7 +40,7 @@ if ($result['info']['online'] == true) {
 }
 */
 
-class Gamespy extends \GameQ3\Protocols {
+class Gamespy extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'all' => "\\status\\",

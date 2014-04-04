@@ -26,7 +26,7 @@ namespace GameQ3\protocols;
  
  // https://github.com/TehGimp/KerbalMultiPlayer/blob/c4890648b9919938bb171ede6e83562c4aa47537/KLFServer/Server.cs#L1019
 
-class kerbalmultiplayer extends \GameQ3\Protocols {
+class kerbalmultiplayer extends \GameQ3\Core\Protocols {
 	protected $protocol = 'kerbalmultiplayer';
 	protected $short_name = 'kerbalmultiplayer';
 	protected $name_long = "Kerbal Space Program - Multiplayer";

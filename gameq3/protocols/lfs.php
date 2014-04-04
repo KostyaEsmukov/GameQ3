@@ -25,7 +25,7 @@ namespace GameQ3\protocols;
  
 use GameQ3\UserException;
 
-class Lfs extends \GameQ3\Protocols {
+class Lfs extends \GameQ3\Core\Protocols {
 	protected $protocol = 'lfs';
 	protected $short_name = 'lfs';
 	protected $name_long = "Live for Speed";

@@ -37,7 +37,7 @@ if ($result['info']['online'] == true) {
  
 use GameQ3\Core\Buffer;
 
-class Samp extends \GameQ3\Protocols {
+class Samp extends \GameQ3\Core\Protocols {
 
 	protected $packets = array(
 		'status' => "SAMP%si",
