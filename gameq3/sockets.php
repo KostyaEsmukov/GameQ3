@@ -27,28 +27,16 @@ class Sockets {
 	 * @var Log
 	 */
 	private $log = null;
+
+	/**
+	 * @var Options
+	 */
+	private $options = null;
 	
 	/*
 		arrays from socket_select preserve keys as of PHP 5.3.0: https://bugs.php.net/bug.php?id=44197
 		arrays from stream_select preserve keys as of PHP 5.4.0: https://bugs.php.net/bug.php?id=53427
 	*/
-	
-	// Options
-	private $connect_timeout = 1; // seconds
-	private $send_once_udp = 5;
-	private $send_once_stream = 5;
-	private $usleep_udp = 100; // ns
-	private $usleep_stream = 100; // ns
-	private $read_timeout = 600;
-	private $read_got_timeout = 100;
-	private $read_retry_timeout = 200;
-	private $loop_timeout = 2; // ms
-	private $socket_buffer = 8192;
-	private $send_retry = 1;
-	private $curl_select_timeout = 1.0; // s
-	private $curl_connect_timeout = 1200; // 800
-	private $curl_total_timeout = 1500; // 1500
-	private $curl_options = array();
 	
 	// Work arrays
 	private $cache_addr = array();
@@ -82,74 +70,27 @@ class Sockets {
 	const CURL_DEFAULT_USERAGENT = "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:19.0) Gecko/20100101 Firefox/19.0";
 	const CURL_DEFAULT_MAXREDIRS = 3;
 	
-	public function __construct($log) {
+	public function __construct($log, $options) {
 		$this->log = $log;
-	}
-	
-	public function getsetOption($set, $key, $value) {
-		$error = false;
-		
-		switch($key) {
-			case 'connect_timeout':
-			case 'send_once_udp':
-			case 'send_once_stream':
-			case 'usleep_udp':
-			case 'usleep_stream':
-			case 'read_timeout':
-			case 'read_got_timeout':
-			case 'read_retry_timeout':
-			case 'loop_timeout':
-			case 'socket_buffer':
-			case 'send_retry':
-			
-			case 'curl_connect_timeout':
-			case 'curl_total_timeout':
-				if ($set) {
-					if (is_int($value))
-						$this->$key = $value;
-					else
-						$error = 'int';
-				} else {
-					return $this->$key;
-				}
-				break;
-			
-			case 'curl_select_timeout':
-				if ($set) {
-					if (is_int($value))
-						$this->$key = ($value/1000);
-					else
-						$error = 'int';
-				} else {
-					return $this->$key;
-				}
-				break;
+		$this->options = $options;
 
-			case 'curl_options':
-				if ($set) {
-					if (is_array($value))
-						foreach($value as $opt => $val) {
-							$this->$key[$opt] = $val;
-						}
-					else
-						$error = 'array';
-				} else {
-					return $this->$key;
-				}
-				break;
-			
-			default:
-				if ($set)
-					throw new UserException("Unknown option key " . var_export($key, true));
-				else
-					return null;
-		}
-		
-		if ($error !== false)
-			throw new UserException("Value for setOption must be " . $error . ". Got value: " . var_export($value, true));
-
-		return false;
+		$this->options->register("connect_timeout", 1, "int"); // seconds
+		$this->options->register("send_once_udp", 5, "int");
+		$this->options->register("send_once_stream", 5, "int");
+		$this->options->register("usleep_udp", 100, "int"); // ns
+		$this->options->register("usleep_stream", 100, "int"); // ns
+		$this->options->register("read_timeout", 600, "int");
+		$this->options->register("read_got_timeout", 100, "int");
+		$this->options->register("read_retry_timeout", 200, "int");
+		$this->options->register("loop_timeout", 2, "int"); // ms
+		$this->options->register("socket_buffer", 8192, "int");
+		$this->options->register("send_retry", 1, "int");
+		$this->options->register("curl_select_timeout", 1.0, "float"); // s
+		$this->options->register("curl_connect_timeout", 1200, "int");
+		$this->options->register("curl_total_timeout", 1500, "int");
+		$this->options->register("curl_options", array(), "array");
 	}
+
 
 	// Resolve address
 	private function _resolveAddr($addr) {
@@ -289,7 +230,7 @@ class Sockets {
 		$errno = null;
 		$errstr = null;
 		// Create the socket
-		$socket = @stream_socket_client($remote_addr, $errno, $errstr, $this->connect_timeout, STREAM_CLIENT_CONNECT);
+		$socket = @stream_socket_client($remote_addr, $errno, $errstr, $this->options->connect_timeout, \STREAM_CLIENT_CONNECT);
 
 		if (!is_resource($socket)) {
 			if ($throw) {
@@ -301,7 +242,7 @@ class Sockets {
 		}
 		
 		stream_set_blocking($socket, false);
-		stream_set_timeout($socket, $this->connect_timeout);
+		stream_set_timeout($socket, $this->options->connect_timeout);
 		
 		$this->sockets_stream[$sid] = $socket;
 		$this->sockets_stream_data[$sid]['c'] = true;
@@ -337,23 +278,23 @@ class Sockets {
 		if (!defined('CURLOPT_CONNECTTIMEOUT_MS')) define('CURLOPT_CONNECTTIMEOUT_MS', 156);
 
 		curl_setopt_array($ch, array(
-			CURLOPT_CONNECTTIMEOUT_MS => $this->curl_connect_timeout,
-			CURLOPT_TIMEOUT_MS => $this->curl_total_timeout,
-			CURLOPT_MAXREDIRS => self::CURL_DEFAULT_MAXREDIRS,
-			CURLOPT_USERAGENT => self::CURL_DEFAULT_USERAGENT,
+			\CURLOPT_CONNECTTIMEOUT_MS => $this->options->curl_connect_timeout,
+			\CURLOPT_TIMEOUT_MS => $this->options->curl_total_timeout,
+			\CURLOPT_MAXREDIRS => self::CURL_DEFAULT_MAXREDIRS,
+			\CURLOPT_USERAGENT => self::CURL_DEFAULT_USERAGENT,
 			// We are not going to post any sensitive information
-			CURLOPT_SSL_VERIFYPEER => false,
-			CURLOPT_SSL_VERIFYHOST => 0,
+			\CURLOPT_SSL_VERIFYPEER => false,
+			\CURLOPT_SSL_VERIFYHOST => 0,
 		));
-		curl_setopt_array($ch, $this->curl_options);
+		curl_setopt_array($ch, $this->options->curl_options);
 		curl_setopt_array($ch, $curl_opts);
 		curl_setopt_array($ch, array(
-			CURLOPT_RETURNTRANSFER => true,
-			CURLOPT_FOLLOWLOCATION => true,
-			CURLOPT_HEADER => false,
-			//CURLOPT_MUTE => true,
-			CURLOPT_NOSIGNAL => true,
-			CURLOPT_URL => $url,
+			\CURLOPT_RETURNTRANSFER => true,
+			\CURLOPT_FOLLOWLOCATION => true,
+			\CURLOPT_HEADER => false,
+			//\CURLOPT_MUTE => true,
+			\CURLOPT_NOSIGNAL => true,
+			\CURLOPT_URL => $url,
 		));
 		
 		if ($return_headers)
@@ -382,7 +323,7 @@ class Sockets {
 		
 		foreach($packets as &$packet) {
 			socket_sendto($this->sockets_udp[$sctn], $packet, strlen($packet), 0 , $this->sockets_udp_send[$sid]['a'], $this->sockets_udp_send[$sid]['p']);
-			usleep($this->usleep_udp);
+			usleep($this->options->usleep_udp);
 		}
 		
 		// true means that socket is alive, not that packet had been successfully sent.
@@ -410,7 +351,7 @@ class Sockets {
 			$er = fwrite($this->sockets_stream[$sid], $packet);
 			$er = ($er === false || $er <= 0 );
 			if ($er) break;
-			usleep($this->usleep_stream);
+			usleep($this->options->usleep_stream);
 		}
 		
 		if (isset($er) && $er) {
@@ -645,7 +586,7 @@ class Sockets {
 					continue;
 				}
 				
-				$buf = stream_socket_recvfrom($sock, $this->socket_buffer);
+				$buf = stream_socket_recvfrom($sock, $this->options->socket_buffer);
 				if ($buf === false || strlen($buf) == 0) {
 					$this->log->debug("Recreating stream socket. " . $sid);
 					$this->_createSocketStream($sid);
@@ -667,7 +608,7 @@ class Sockets {
 				$buf = "";
 				$name = "";
 				$port = 0;
-				socket_recvfrom($sock, $buf, $this->socket_buffer, 0 , $name, $port );
+				socket_recvfrom($sock, $buf, $this->options->socket_buffer, 0 , $name, $port );
 				if ($buf === false || strlen($buf) == 0) {
 					$this->log->debug("Recreating udp socket. " . $sctn);
 					$this->_createSocketUDP($sctn);
@@ -688,8 +629,8 @@ class Sockets {
 		$long_to = true;
 		
 		foreach($this->send as $sid => $data) {
-			$udp_limit = ($s_udp_cnt >= $this->send_once_udp);
-			$stream_limit = ($s_stream_cnt >= $this->send_once_stream);
+			$udp_limit = ($s_udp_cnt >= $this->options->send_once_udp);
+			$stream_limit = ($s_stream_cnt >= $this->options->send_once_stream);
 			
 			if ($udp_limit && $stream_limit) {
 				$long_to = false;
@@ -711,14 +652,14 @@ class Sockets {
 			// packet already sent.
 			if ($responses[$sid]['t'] !== 0) {
 				// send just once?
-				$timeout = ($responses[$sid]['t'] == 1 ? $this->read_timeout : $this->read_retry_timeout);
+				$timeout = ($responses[$sid]['t'] == 1 ? $this->options->read_timeout : $this->options->read_retry_timeout);
 				
 				// packet didn't timed out yet
 				if (($now - $responses[$sid]['st'])*1000 < $timeout)
 					continue;
 					
 				// packet timed out
-				if ($responses[$sid]['t'] > $this->send_retry) {
+				if ($responses[$sid]['t'] > $this->options->send_retry) {
 					$this->log->debug("Packet timed out " . $sid);
 					unset($this->send[$sid]);
 					continue;
@@ -815,13 +756,13 @@ class Sockets {
 							$buf = "";
 							$name = "";
 							$port = 0;
-							$res = @socket_recvfrom($sock, $buf, $this->socket_buffer, 0, $name, $port);
+							$res = @socket_recvfrom($sock, $buf, $this->options->socket_buffer, 0, $name, $port);
 
 							$exception = ($res === false || $res <= 0 || strlen($buf) == 0);
 						} else {
 							$sid = $k;
 							
-							$buf = @stream_socket_recvfrom($sock, $this->socket_buffer);
+							$buf = @stream_socket_recvfrom($sock, $this->options->socket_buffer);
 
 							// In winsock and unix sockets recv() returns empty string when
 							// tcp connection is closed. I hope in this case too...
@@ -966,11 +907,11 @@ class Sockets {
 				
 			foreach($read_en as $sid => $val) {
 				if ($responses[$sid]['rc'] === 0) {
-					$timeout = ($responses[$sid]['t'] == 1 ? $this->read_timeout : $this->read_retry_timeout);
+					$timeout = ($responses[$sid]['t'] == 1 ? $this->options->read_timeout : $this->options->read_retry_timeout);
 					$to = (($now - $responses[$sid]['st'])*1000 >= $timeout);
 				} else {
 					// some data received, count timeout another way
-					$to = (($now - $responses[$sid]['rt'])*1000 >= $this->read_got_timeout);
+					$to = (($now - $responses[$sid]['rt'])*1000 >= $this->options->read_got_timeout);
 				}
 					
 				// packet timed out
@@ -1073,7 +1014,7 @@ class Sockets {
 		if (is_null($this->curl_mh) || !$this->curl_running) return;
 		
 		while (true) {
-			$select = curl_multi_select($this->curl_mh, ($final ? 0 : $this->curl_select_timeout));
+			$select = curl_multi_select($this->curl_mh, ($final ? 0 : $this->options->curl_select_timeout));
 			if ($select == -1) break;
 			do {
 				$mrc = curl_multi_exec($this->curl_mh, $active);
@@ -1164,9 +1105,9 @@ class Sockets {
 
 			// Send packets
 			if ($this->_procWrite($responses, $read_udp, $read_udp_sctn, $read_udp_sid, $read_stream)) {
-				$timeout = max($this->read_timeout, $this->read_retry_timeout);
+				$timeout = max($this->options->read_timeout, $this->options->read_retry_timeout);
 			} else {
-				$timeout = $this->loop_timeout;
+				$timeout = $this->options->loop_timeout;
 			}
 
 			$start_time = microtime(true);

@@ -32,6 +32,7 @@
 namespace GameQ3;
 
 use GameQ3\Core\Log;
+use GameQ3\Core\Options;
 
 // Autoload classes
 spl_autoload_extensions(".php");
@@ -42,12 +43,11 @@ set_include_path(get_include_path() . PATH_SEPARATOR . realpath(dirname(__FILE__
 
 class GameQ3 {
 
-	// Config
-	private $servers_count = 2500;
-
 	// Working vars
 	private $sock = null;
 	private $log = null;
+	private $options = null;
+
 	private $filters = array();
 	private $servers_filters = array();
 	private $servers = array();
@@ -57,7 +57,10 @@ class GameQ3 {
 
 	public function __construct() {
 		$this->log = new Log();
-		$this->sock = new Sockets($this->log);
+		$this->options = new Options();
+		$this->sock = new Sockets($this->log, $this->options);
+
+		$this->options->register("servers_count", 2500, "int");
 	}
 	
 	/**
@@ -83,31 +86,6 @@ class GameQ3 {
 		else
 			throw new UserException("Argument for setLogger must be callable");
 	}
-	
-	private function _getsetOption($set, $key, $value = null) {
-		$error = false;
-		
-		switch($key) {
-			case 'servers_count':
-				if ($set) {
-					if (is_int($value))
-						$this->$key = $value;
-					else
-						$error = 'int';
-				} else {
-					return $this->$key;
-				}
-				break;
-			
-			default:
-				return $this->sock->getsetOption($set, $key, $value);
-		}
-		
-		if ($error !== false)
-			throw new UserException("Value for setOption must be " . $error . ". Got value: " . var_export($value, true));
-			
-		return true;
-	}
 
 	/**
 	 * Set option. See readme for a list of options.
@@ -116,17 +94,16 @@ class GameQ3 {
 	 * @throws UserException
 	 */
 	public function setOption($key, $value) {
-		if ($this->started)
-			throw new UserException("You cannot set options while in request");
-		return $this->_getsetOption(true, $key, $value);
+		$this->options->set($key, $value);
 	}
-	
-	public function __set($key, $value) {
-		return $this->setOption($key, $value);
-	}
-	
-	public function __get($key) {
-		return $this->_getsetOption(false, $key);
+
+	/**
+	 * Get value of the option.
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function getOption($key) {
+		return $this->options->get($key);
 	}
 	
 	/**
@@ -135,14 +112,11 @@ class GameQ3 {
 	 * @param array $args Filter options
 	 * @throws UserException
 	 */
-	public function setFilter($name, $args = array()) {
-		if ($this->started)
-			throw new UserException("You cannot set filter while in request");
-
+	public function setFilter($name, $args=array()) {
 		if (!is_array($args))
 			throw new UserException("Args must be an array in setFilter (name '" . $name . "')");
 
-		$this->filters[$name] = $args;
+		$this->filters[strtolower($name)] = $args;
 	}
 
 	/**
@@ -151,9 +125,6 @@ class GameQ3 {
 	 * @throws UserException
 	 */
 	public function unsetFilter($name) {
-		if ($this->started)
-			throw new UserException("You cannot unset filter while in request");
-
 		unset($this->filters[$name]);
 	}
 
@@ -191,8 +162,11 @@ class GameQ3 {
 		
 		$res = array(
 			'protocol' => $dp['protocol'],
-			'name' => $dp['name'],
+			'short_name' => $dp['short_name'],
 			'name_long' => $dp['name_long'],
+			'network' => $dp['network'],
+			'connect_string' => (is_string($dp['connect_string']) ? $dp['connect_string'] : null),
+
 			'query_port' => (is_int($dp['query_port']) ? $dp['query_port'] : null),
 			'connect_port' => (is_int($dp['connect_port']) ? $dp['connect_port'] : ($pt_string === 'SAME' ? $dp['query_port'] : null)), // connect_port shouldn't be set in PT_SAME
 			'ports_type' => $dp['ports_type'],
@@ -201,11 +175,8 @@ class GameQ3 {
 				'connect_port' => true,
 				'query_port' => ($pt_string !== 'SAME'), // Only PT_SAME ignores query port
 			),
-			'network' => $dp['network'],
-			'connect_string' => (is_string($dp['connect_string']) ? $dp['connect_string'] : null),
+
 		);
-		
-		unset($reflection);
 		
 		return $res;
 	}
@@ -229,7 +200,7 @@ class GameQ3 {
 				continue;
 			}
 			
-			$protocol = pathinfo($entry, PATHINFO_FILENAME);
+			$protocol = pathinfo($entry, \PATHINFO_FILENAME);
 
 			$res = $this->getProtocolInfo($protocol);
 
@@ -419,7 +390,7 @@ class GameQ3 {
 			unset($this->request_servers[$server_id]);
 			
 			$s_cnt++;
-			if ($s_cnt > $this->servers_count)
+			if ($s_cnt > $this->options->servers_count)
 				break;
 		}
 		

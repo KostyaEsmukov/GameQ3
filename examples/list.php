@@ -20,7 +20,7 @@ foreach ($protocols as $classname => $dp) {
 	
 	$l = "\t\t\t\t"; // idents
 	$l .= "<tr" . $cls . ">";
-	$l .= sprintf("<td class='left'>%s</td><td class='left'>%s</td><td>%s</td><td>%s</td>", $classname, $dp['name_long'], $dp['name'], $dp['protocol']);
+	$l .= sprintf("<td class='left'>%s</td><td class='left'>%s</td><td>%s</td><td>%s</td>", $classname, $dp['name_long'], $dp['short_name'], $dp['protocol']);
 	if ($dp['network']) {
 		if ($dp['ports_type_info']['connect_port'] === false || $dp['ports_type_info']['query_port'] === false) {
 			if ($dp['ports_type_info']['connect_port'] !== false) {
