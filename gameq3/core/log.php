@@ -18,7 +18,7 @@
  *
  */
  
-namespace GameQ3;
+namespace GameQ3\Core;
 
 class Log {
 	const DEBUG = 1; //0b0001;

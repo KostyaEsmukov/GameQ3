@@ -18,7 +18,7 @@
  *
  */
 
-namespace GameQ3;
+namespace GameQ3\Core;
 
 class Result {
 	private $result = array();

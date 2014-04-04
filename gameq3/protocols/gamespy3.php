@@ -40,7 +40,7 @@ if ($result['info']['online'] == true) {
 }
 */
 
-use GameQ3\Buffer;
+use GameQ3\Core\Buffer;
 
 class Gamespy3 extends \GameQ3\Protocols {
 

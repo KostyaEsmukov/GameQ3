@@ -35,7 +35,7 @@ if ($result['info']['online'] == true) {
 }
 */
  
-use GameQ3\Buffer;
+use GameQ3\Core\Buffer;
 
 class Samp extends \GameQ3\Protocols {
 

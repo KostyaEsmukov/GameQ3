@@ -20,7 +20,7 @@
 
 namespace GameQ3\protocols;
 
-use GameQ3\Buffer;
+use GameQ3\Core\Buffer;
  
 class Bf3 extends \GameQ3\Protocols {
 

@@ -20,6 +20,8 @@
  
 namespace GameQ3;
 
+use GameQ3\Core\Log;
+
 class Sockets {
 	/**
 	 * @var Log

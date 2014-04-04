@@ -27,7 +27,7 @@
  */
  
  
-namespace GameQ3;
+namespace GameQ3\Core;
  
 class Buffer {
 	/**

@@ -20,6 +20,9 @@
  
 namespace GameQ3;
  
+use GameQ3\Core\Log;
+use GameQ3\Core\Result;
+
 abstract class Protocols {
 	protected $protocol = 'undefined';
 	protected $name = 'undefined';

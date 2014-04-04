@@ -32,6 +32,8 @@
 namespace GameQ3;
 
 // Autoload classes
+use GameQ3\Core\Log;
+
 spl_autoload_extensions(".php");
 spl_autoload_register();
 
@@ -335,7 +337,7 @@ class GameQ3 {
 		return $result;
 	}
 	
-	// returns array until we have servers to reqest. otherwise returns false
+	// returns array until we have servers to request. otherwise returns false
 
 	/**
 	 * Request added servers and return responses by parts. Returns false when there are no responses left.
