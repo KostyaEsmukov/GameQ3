@@ -60,8 +60,8 @@ class Gamespy extends \GameQ3\Core\Protocols {
 	protected $ports_type = self::PT_UNKNOWN;
 
 	protected $teams;
-	
-	public function init() {
+
+	protected function init() {
 		if ($this->isRequested('teams'))
 			$this->result->setIgnore('teams', false);
 

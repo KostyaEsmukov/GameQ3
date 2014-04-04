@@ -43,7 +43,7 @@ class Unreal2 extends \GameQ3\Core\Protocols {
 		);
 	}
 
-	public function init() {
+	protected function init() {
 		$this->queue('status', 'udp', $this->packets['status']);
 		if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);
 		if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);

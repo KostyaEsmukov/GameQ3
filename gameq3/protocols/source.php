@@ -43,9 +43,9 @@ class Source extends \GameQ3\Core\Protocols {
 	protected $source_engine = true;
 
 	protected $appid = null;
-	
 
-	public function init() {
+
+	protected function init() {
 		$this->queue('details', 'udp', $this->packets['details']);
 		if ($this->isRequested('settings') || $this->isRequested('players'))
 			$this->queue('challenge', 'udp', $this->packets['challenge'], array('response_count' => 1));

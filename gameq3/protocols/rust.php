@@ -30,7 +30,7 @@ class Rust extends \GameQ3\Protocols\Source {
 	protected $connect_port = 28015;
 	protected $ports_type = self::PT_DIFFERENT_COMPUTABLE;
 
-	public function init() {
+	protected function init() {
 		$this->forceRequested('settings', false);
 		
 		$this->forceRequested('players', false);

@@ -43,7 +43,7 @@ class Gamespy2 extends \GameQ3\Core\Protocols {
 		);
 	}
 
-	public function init() {
+	protected function init() {
 		if ($this->isRequested('teams'))
 			$this->result->setIgnore('teams', false);
 

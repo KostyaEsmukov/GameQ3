@@ -30,8 +30,8 @@ class Tshock extends \GameQ3\Core\Protocols {
 	protected $ports_type = self::PT_DIFFERENT_NONCOMPUTABLE_VARIABLE;
 	
 	protected $url = "/v2/server/status?players=true&rules=true";
-	
-	public function init() {
+
+	protected function init() {
 		if ($this->isRequested('teams'))
 			$this->result->setIgnore('teams', false);
 

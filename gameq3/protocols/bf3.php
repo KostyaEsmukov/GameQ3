@@ -43,9 +43,9 @@ class Bf3 extends \GameQ3\Core\Protocols {
 	protected $protocol = 'bf3';
 	protected $short_name = 'bf3';
 	protected $name_long = "Battlefield 3";
-	
-	
-	public function init() {
+
+
+	protected function init() {
 		if ($this->isRequested('teams'))
 			$this->result->setIgnore('teams', false);
 

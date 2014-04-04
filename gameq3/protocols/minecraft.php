@@ -35,9 +35,9 @@ class Minecraft extends \GameQ3\Core\Protocols {
 	protected $protocol = 'minecraft';
 	protected $short_name = 'minecraft';
 	protected $name_long = "Minecraft";
-	
-	
-	public function init() {
+
+
+	protected function init() {
 		$this->queue('status', 'tcp', $this->packets['status'], array('response_count' => 1, 'close' => true));
 	}
 	

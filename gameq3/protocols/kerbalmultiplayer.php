@@ -81,8 +81,8 @@ class kerbalmultiplayer extends \GameQ3\Core\Protocols {
 				$this->result->addSetting($key, $val);
 		}
 	}
-	
-	public function init() {
+
+	protected function init() {
 		$this->queue('status', 'http', $this->url);
 	}
 

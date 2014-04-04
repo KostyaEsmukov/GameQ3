@@ -134,8 +134,8 @@ class Teamspeak3 extends \GameQ3\Core\Protocols {
 		$this->packet = $formed_packet;
 		$this->reply_format = $reply_format;
 	}
-	
-	public function init() {
+
+	protected function init() {
 		$this->queue('all', 'tcp', $this->packet, array('close' => true));
 	}
 	

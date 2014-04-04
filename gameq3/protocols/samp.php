@@ -67,9 +67,9 @@ class Samp extends \GameQ3\Core\Protocols {
 			$this->packets[$packet_type] = sprintf($packet, $tail);
 		}
 	}
-	
-	
-	public function init() {
+
+
+	protected function init() {
 		$this->queue('status', 'udp', $this->packets['status']);
 		if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);
 		if ($this->isRequested('players')) {

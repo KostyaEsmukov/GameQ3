@@ -57,7 +57,7 @@ class Minecraft16 extends \GameQ3\Protocols\Minecraft {
 		return $packet;
 	}
 
-	public function init() {
+	protected function init() {
 		$this->queue('status', 'tcp', $this->_buildStatus($this->query_addr, $this->query_port), array('response_count' => 1, 'close' => true));
 	}
 }

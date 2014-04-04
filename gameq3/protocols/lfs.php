@@ -58,8 +58,8 @@ class Lfs extends \GameQ3\Core\Protocols {
 	protected function genConnectString() {
 		return str_replace('{HOSTNAME}', rawurlencode($this->server_info['hostname']), $this->connect_string);
 	}
-	
-	public function init() {
+
+	protected function init() {
 		$this->queue('status', 'http', $this->url);
 	}
 	
