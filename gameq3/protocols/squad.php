@@ -25,9 +25,9 @@ use GameQ3\Buffer;
 class Squad extends \GameQ3\Protocols {
 
 	protected $packets = array(
-		'status'  => "",
-		'rules'   => "",
-		'players' => "",
+		'status'  => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
+		'rules'   => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
+		'players' => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
 	);
 
 	protected $ports_type = self::PT_UNKNOWN;
@@ -37,9 +37,9 @@ class Squad extends \GameQ3\Protocols {
 	
 	
 	public function init() {
-		$this->queue('status', 'udp', $this->packets['status']);
-		if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);
-		if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
+            $this->queue('status', 'udp', $this->packets['status']);
+            if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);
+            if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
 	}
 	
 	protected function processRequests($qid, $requests) {
@@ -63,15 +63,24 @@ class Squad extends \GameQ3\Protocols {
 	}
 
 	protected function _process_status($packets) {
+            $buf = new Buffer($this->_preparePackets($packets));
+            $buf->jumpto(1);
+            
+            $this->result->addGeneral('hostname', $buf->readString());
+            $mapstring = $buf->readString();
+            $this->result->addGeneral('map', $mapstring);
+            $this->result->addGeneral('mode', split(" ", $mapstring)[sizeof(split(" ", $mapstring))-1]);
+            
+            $buf->readString();$buf->readString();$buf->readInt8();$buf->readInt8();
+            $this->result->addGeneral('num_players', $buf->readInt8());
+            $this->result->addGeneral('max_players', $buf->readInt8());
             
 	}
 	
 	protected function _process_players($packets) {
-            
 	}
 	
 	protected function _process_rules($packets) {
-            
 	}
 	
 }
