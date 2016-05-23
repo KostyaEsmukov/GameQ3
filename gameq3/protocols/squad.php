@@ -26,8 +26,9 @@ class Squad extends \GameQ3\Protocols {
 
 	protected $packets = array(
 		'status'  => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
-		'rules'   => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
-		'players' => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
+		'challenge' => "\xff\xff\xff\xff\x56\x00\x00\x00\x00",
+		'settings'   => "\xff\xff\xff\xff\x56%s",
+		//'players'   => "\xff\xff\xff\xff\x56\xE2\x15\xE9\x0A",
 	);
 
 	protected $ports_type = self::PT_UNKNOWN;
@@ -38,16 +39,17 @@ class Squad extends \GameQ3\Protocols {
 	
 	public function init() {
             $this->queue('status', 'udp', $this->packets['status']);
-            if ($this->isRequested('settings')) $this->queue('rules', 'udp', $this->packets['rules']);
-            if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
 	}
 	
 	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
 			return $this->_process_status($requests['responses']);
 		} else
-		if ($qid === 'rules') {
-			return $this->_process_rules($requests['responses']);
+		if ($qid === 'challenge') {
+			return $this->_process_challenge($requests['responses']);
+		} else
+		if ($qid === 'settings') {
+			return $this->_process_settings($requests['responses']);
 		} else
 		if ($qid === 'players') {
 			return $this->_process_players($requests['responses']);
@@ -69,18 +71,79 @@ class Squad extends \GameQ3\Protocols {
             $this->result->addGeneral('hostname', $buf->readString());
             $mapstring = $buf->readString();
             $this->result->addGeneral('map', $mapstring);
-            $this->result->addGeneral('mode', split(" ", $mapstring)[sizeof(split(" ", $mapstring))-1]);
             
             $buf->readString();$buf->readString();$buf->readInt8();$buf->readInt8();
             $this->result->addGeneral('num_players', $buf->readInt8());
             $this->result->addGeneral('max_players', $buf->readInt8());
+            $this->result->addGeneral('bot_players', $buf->readInt8());
+            /*$server_type = $buf->readInt8();
+            
+            $environment = "";
+            switch ($buf->readChar()){
+                case 'l':
+                    $environment = "Linux";
+                    break;
+                    
+                case 'w':
+                    $environment = "Windows";
+                    break;
+                
+                case 'm':
+                case 'o':
+                    $environment = "Mac OS";
+                    break;
+            }*/
+            
+            if ($this->isRequested('challenge')) $this->queue('challenge', 'udp', $this->packets['challenge']);
             
 	}
 	
+	protected function _process_challenge($packets) {
+            $buf = new Buffer($this->_preparePackets($packets));
+            
+            $challenge = $buf->getData();
+            
+            if ($this->isRequested('settings')) $this->queue('settings', 'udp', sprintf($this->packets['settings'], $challenge));
+            //if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
+	}
+	
+	protected function _process_settings($packets) {
+            $buf = new Buffer($this->_preparePackets($packets));
+            
+            $buf->jumpto(2);
+            
+            $this->result->addSetting("length", $buf->getLength());
+            
+            while ($buf->getLength()>0){
+                $buf->lookAhead(1);
+                $key = $buf->readString();
+                $value = $buf->readString();
+                $this->result->addSetting($key, $value);
+                
+                switch ($key){
+                    case "GameMode_s":
+                        $this->result->addGeneral('mode', $value);
+                        break;
+                    
+                    case "GameVersion_s":
+                        $this->result->addGeneral("version", $value);
+                        break;
+                    
+                    case "NUMPRIVCONN":
+                        $this->result->addGeneral("private_players", intval($value));
+                        break;
+                    
+                    case "Password_b":
+                        $this->result->addGeneral("password",  ($value=="true") ? 1 : 0);
+                        break;
+                }
+                $buf->lookAhead(1);
+            }
+            
+	}
+        
 	protected function _process_players($packets) {
+            
 	}
-	
-	protected function _process_rules($packets) {
-	}
-	
+
 }
