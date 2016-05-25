@@ -28,7 +28,7 @@ class Squad extends \GameQ3\Protocols {
 		'status'  => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
 		'challenge' => "\xff\xff\xff\xff\x56\x00\x00\x00\x00",
 		'settings'   => "\xff\xff\xff\xff\x56%s",
-		//'players'   => "\xff\xff\xff\xff\x56\xE2\x15\xE9\x0A",
+		'players'   => "\xff\xff\xff\xff\x55%s",
 	);
 
 	protected $ports_type = self::PT_UNKNOWN;
@@ -103,8 +103,8 @@ class Squad extends \GameQ3\Protocols {
             
             $challenge = $buf->getData();
             
-            if ($this->isRequested('settings')) $this->queue('settings', 'udp', sprintf($this->packets['settings'], $challenge));
-            //if ($this->isRequested('players')) $this->queue('players', 'udp', $this->packets['players']);
+            if ($this->isRequested('challenge')) $this->queue('settings', 'udp', sprintf($this->packets['settings'], $challenge));
+            if ($this->isRequested('challenge')) $this->queue('players', 'udp', sprintf($this->packets['players'], $challenge));
 	}
 	
 	protected function _process_settings($packets) {
@@ -143,6 +143,31 @@ class Squad extends \GameQ3\Protocols {
 	}
         
 	protected function _process_players($packets) {
+            $buf = new Buffer($this->_preparePackets($packets));
+            
+            $count = $buf->readInt8();
+            
+            $this->result->addSetting("length_players", $buf->getLength());
+            
+            while ($buf->getLength()>0){
+                $id = $buf->readInt8(); //= 0 for every player ??
+                
+                $name  = $buf->readString();
+                
+                $other = Array();
+                
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                array_push($other, "0x".bin2hex($buf->read(1)));
+                
+                $this->result->addPlayer($name, 0, null, $other, 0);
+            }
             
 	}
 
