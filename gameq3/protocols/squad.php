@@ -103,8 +103,8 @@ class Squad extends \GameQ3\Protocols {
             
             $challenge = $buf->getData();
             
-            if ($this->isRequested('challenge')) $this->queue('settings', 'udp', sprintf($this->packets['settings'], $challenge));
-            if ($this->isRequested('challenge')) $this->queue('players', 'udp', sprintf($this->packets['players'], $challenge));
+            if ($this->isRequested('settings')) $this->queue('settings', 'udp', sprintf($this->packets['settings'], $challenge));
+            if ($this->isRequested('players')) $this->queue('players', 'udp', sprintf($this->packets['players'], $challenge));
 	}
 	
 	protected function _process_settings($packets) {
