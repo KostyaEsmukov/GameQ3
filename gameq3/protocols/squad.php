@@ -111,9 +111,7 @@ class Squad extends \GameQ3\Protocols {
             $buf = new Buffer($this->_preparePackets($packets));
             
             $buf->jumpto(2);
-            
-            $this->result->addSetting("length", $buf->getLength());
-            
+
             while ($buf->getLength()>0){
                 $buf->lookAhead(1);
                 $key = $buf->readString();
@@ -146,27 +144,15 @@ class Squad extends \GameQ3\Protocols {
             $buf = new Buffer($this->_preparePackets($packets));
             
             $count = $buf->readInt8();
-            
-            $this->result->addSetting("length_players", $buf->getLength());
-            
+
             while ($buf->getLength()>0){
                 $id = $buf->readInt8(); //= 0 for every player ??
                 
                 $name  = $buf->readString();
                 
-                $other = Array();
+                $buf->skip(8);
                 
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                array_push($other, "0x".bin2hex($buf->read(1)));
-                
-                $this->result->addPlayer($name, 0, null, $other, 0);
+                $this->result->addPlayer($name, 0, null, null, 0);
             }
             
 	}
