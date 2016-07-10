@@ -39,6 +39,9 @@ class Squad extends \GameQ3\Protocols {
 	
 	public function init() {
             $this->queue('status', 'udp', $this->packets['status']);
+            if ($this->isRequested('settings') || $this->isRequested('players')) {
+                $this->queue('challenge', 'udp', $this->packets['challenge']);
+            }
 	}
 	
 	protected function processRequests($qid, $requests) {
@@ -93,9 +96,6 @@ class Squad extends \GameQ3\Protocols {
                     $environment = "Mac OS";
                     break;
             }*/
-            
-            if ($this->isRequested('challenge')) $this->queue('challenge', 'udp', $this->packets['challenge']);
-            
 	}
 	
 	protected function _process_challenge($packets) {
