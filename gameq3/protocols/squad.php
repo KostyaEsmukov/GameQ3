@@ -143,7 +143,9 @@ class Squad extends \GameQ3\Protocols {
 	protected function _process_players($packets) {
             $buf = new Buffer($this->_preparePackets($packets));
             
-            $count = $buf->readInt8();
+            $count = $buf->readInt8(); //somehow, this is wrong
+
+            $count_real = 0;
 
             while ($buf->getLength()>0){
                 $id = $buf->readInt8(); //= 0 for every player ??
@@ -152,9 +154,12 @@ class Squad extends \GameQ3\Protocols {
                 
                 $buf->skip(8);
                 
-                $this->result->addPlayer($name, 0, null, null, 0);
+                if ($name !== ""){
+                    $this->result->addPlayer($name, 0, null, null, 0);
+                    $count_real++;
+                }
             }
-            
+            $this->result->addGeneral('num_players', $count_real);            
 	}
 
 }
