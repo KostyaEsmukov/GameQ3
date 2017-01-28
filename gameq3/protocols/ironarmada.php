@@ -22,32 +22,32 @@ namespace GameQ3\protocols;
  
 use GameQ3\Buffer;
 
-class Squad extends \GameQ3\Protocols {
+class IronArmada extends \GameQ3\Protocols {
 
 	protected $packets = array(
 		'status'  => "\xff\xff\xff\xff\x54\x53\x6f\x75\x72\x63\x65\x20\x45\x6e\x67\x69\x6e\x65\x20\x51\x75\x65\x72\x79\x00",
-		'challenge' => "\xff\xff\xff\xff\x56\x00\x00\x00\x00",
+		/*'challenge' => "\xff\xff\xff\xff\x56\x00\x00\x00\x00",
 		'settings'   => "\xff\xff\xff\xff\x56%s",
-		'players'   => "\xff\xff\xff\xff\x55%s",
+		'players'   => "\xff\xff\xff\xff\x55%s",*/
 	);
 
 	protected $ports_type = self::PT_UNKNOWN;
-	protected $protocol = 'squad';
-	protected $name = 'squad';
-	protected $name_long = "Squad";
+	protected $protocol = 'ironarmada';
+	protected $name = 'IronArmada';
+	protected $name_long = "IronArmada";
 	
 	
 	public function init() {
             $this->queue('status', 'udp', $this->packets['status']);
-            if ($this->isRequested('settings') || $this->isRequested('players')) {
+            /*if ($this->isRequested('settings') || $this->isRequested('players')) {
                 $this->queue('challenge', 'udp', $this->packets['challenge']);
-            }
+            }*/
 	}
 	
 	protected function processRequests($qid, $requests) {
 		if ($qid === 'status') {
 			return $this->_process_status($requests['responses']);
-		} else
+		} /*else
 		if ($qid === 'challenge') {
 			return $this->_process_challenge($requests['responses']);
 		} else
@@ -56,7 +56,7 @@ class Squad extends \GameQ3\Protocols {
 		} else
 		if ($qid === 'players') {
 			return $this->_process_players($requests['responses']);
-		}
+		}*/
 	}
 	
 	protected function _preparePackets($packets) {
@@ -79,10 +79,17 @@ class Squad extends \GameQ3\Protocols {
             $this->result->addGeneral('num_players', $buf->readInt8());
             $this->result->addGeneral('max_players', $buf->readInt8());
             $this->result->addGeneral('bot_players', $buf->readInt8());
-            /*$server_type = $buf->readInt8();
+            
+            $server_type = $buf->readInt8();
+            switch($server_type) {
+		case 'l': $ds = "Listen"; break;
+                default:  $ds = "Dedicated";
+            }
+            $this->result->addSetting('server_type', $ds);
             
             $environment = "";
-            switch ($buf->readChar()){
+            $env_b = $buf->readInt8();
+            switch ( $env_b){
                 case 'l':
                     $environment = "Linux";
                     break;
@@ -95,10 +102,18 @@ class Squad extends \GameQ3\Protocols {
                 case 'o':
                     $environment = "Mac OS";
                     break;
-            }*/
+                
+                default:
+                    $environment = "unknown";
+            }
+            $this->result->addSetting("os", $environment);
+            
+            $buf->readInt16();
+            
+            $this->result->addGeneral("version", $buf->readString());
 	}
 	
-	protected function _process_challenge($packets) {
+	/*protected function _process_challenge($packets) {
             $buf = new Buffer($this->_preparePackets($packets));
             
             $challenge = $buf->getData();
@@ -160,6 +175,6 @@ class Squad extends \GameQ3\Protocols {
                 }
             }
             $this->result->addGeneral('num_players', $count_real);            
-	}
+	}*/
 
 }
